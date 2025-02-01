@@ -1,0 +1,15 @@
+# Binary files
+/bin/
+*.o
+
+# IDE
+.idea/
+.vscode/
+
+# Generated files
+*.bpf.o
+*_bpfeb.go
+*_bpfel.go
+
+# Dependencies
+/vendor/

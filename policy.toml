@@ -1,0 +1,33 @@
+# MXTrack Monitor Policy
+
+# File Monitoring Configuration
+[file_monitor]
+enabled = true
+directories = [
+    "/home/lighthouse/test-mxtrack",
+]
+
+# Process Execution Monitoring Configuration
+[exec_monitor]
+enabled = true
+watch_commands = [
+    "bash",
+    "python",
+    "nginx"
+]
+
+# Network Monitoring Configuration
+[network_monitor]
+enabled = true
+ports = [2333, 8888, 9999, 10086]
+protocols = ["tcp", "udp"]
+
+# Logging configuration
+[log]
+level = "info"
+format = "json"
+output_path = "/var/log/mxtrack/app.log"
+max_size = 100    # MB
+max_age = 7       # days
+max_backups = 5   # files
+compress = true
