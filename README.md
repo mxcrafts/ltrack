@@ -80,33 +80,128 @@ make && ./bin/mxtrack
 
 ### Configuration
 
-Create policy.toml configuration file:
+### Command Line Options
+
+```bash
+# Run with default configuration file (policy.toml)
+./bin/mxtrack
+
+# Run with specified configuration file
+./bin/mxtrack --config /path/to/config.toml
+```
+
+### Log Level Configuration
+
+The log level can be configured in two ways:
+
+1. Environment Variable (Highest Priority):
+```bash
+# Set log level via environment variable
+export MXTRACK_LOG_LEVEL=debug  # Options: debug, info, warn, error
+export MXTRACK_LOG_FORMAT=json  # Options: json, text
+
+# Run with environment settings
+./bin/mxtrack
+```
+
+2. Configuration File (Default Priority):
+```toml
+# policy.toml
+[log]
+level = "info"      # Options: debug, info, warn, error
+format = "json"     # Options: json, text
+output_path = "/var/log/mxtrack/app.log"
+max_size = 100      # Maximum size in megabytes
+max_age = 7         # Maximum age in days
+max_backups = 5     # Maximum number of old log files
+compress = true     # Compress old files
+```
+
+#### Log Levels Usage Guide:
+
+- `debug`: Detailed information for debugging (Development)
+  - Function entry/exit
+  - Variable values
+  - Detailed process information
+  - Performance metrics
+
+- `info`: General operational information (Production)
+  - Service start/stop
+  - Configuration loading
+  - Monitor status changes
+  - Normal operations
+
+- `warn`: Warning messages for potential issues
+  - Resource usage warnings
+  - Recoverable errors
+  - Performance degradation
+
+- `error`: Error conditions requiring attention
+  - Service failures
+  - Critical errors
+  - Unrecoverable situations
+
+#### Environment Recommendations:
+
+- Development: `debug` level for maximum visibility
+- Testing: `debug` or `info` level based on testing needs
+- Staging: `info` level to match production
+- Production: `info` level for normal operations
+
+### Configuration File Structure
 
 ```toml
+# MXTrack Monitor Policy (policy.toml)
 
+# File Monitoring Configuration
 [file_monitor]
 enabled = true
-directories = ["/path/to/monitor"]
+directories = [
+    "/path/to/monitor",
+]
 
+# Process Execution Monitoring Configuration
 [exec_monitor]
 enabled = true
-watch_commands = ["bash", "python"]
+watch_commands = [
+    "bash",
+    "python",
+    "nginx"
+]
 
+# Network Monitoring Configuration
 [network_monitor]
 enabled = true
-ports = [80, 443]
+ports = [80, 443, 8080]
 protocols = ["tcp", "udp"]
 
+# Logging Configuration
 [log]
 level = "info"
 format = "json"
 output_path = "/var/log/mxtrack/app.log"
-max_size = 100  # MB
-max_age = 7     # Days
-max_backups = 5
+max_size = 100    # MB
+max_age = 7       # days
+max_backups = 5   # files
 compress = true
-
 ```
+
+### Best Practices
+
+1. Log Level Selection:
+   - Use `info` in production for normal operations
+   - Use `debug` only when detailed troubleshooting is needed
+   - Set appropriate log rotation settings to manage disk usage
+
+2. Configuration Management:
+   - Keep production configuration in version control
+   - Use environment-specific configuration files
+   - Validate configuration changes before deployment
+
+3. Monitoring Setup:
+   - Enable only required monitors
+   - Configure appropriate directories and commands
+   - Regular review of monitored resources
 
 ### Running
 
