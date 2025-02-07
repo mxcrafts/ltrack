@@ -6,9 +6,16 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+const (
+	// 环境变量名称
+	EnvLogLevel  = "MXTRACK_LOG_LEVEL"
+	EnvLogFormat = "MXTRACK_LOG_FORMAT"
 )
 
 var Global *slog.Logger
@@ -31,8 +38,47 @@ type Config struct {
 	Compress   bool   `toml:"compress"`    // compress old files
 }
 
+// getLogLevelFromEnv 从环境变量获取日志级别
+func getLogLevelFromEnv() slog.Level {
+	levelStr := strings.ToLower(os.Getenv(EnvLogLevel))
+	switch levelStr {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
 // InitLogger Initialize the logger according to the configuration
 func InitLogger(cfg *Config) error {
+	// Prioritize the logging level in the environment variable
+	level := getLogLevelFromEnv()
+
+	// If the environment variable is not set, use the configuration file level
+	if os.Getenv(EnvLogLevel) == "" {
+		switch strings.ToLower(cfg.Level) {
+		case "debug":
+			level = slog.LevelDebug
+		case "info":
+			level = slog.LevelInfo
+		case "warn":
+			level = slog.LevelWarn
+		case "error":
+			level = slog.LevelError
+		}
+	}
+
+	format := os.Getenv(EnvLogFormat)
+	if format == "" {
+		format = cfg.Format
+	}
+
 	// Create log directory
 	if err := os.MkdirAll(filepath.Dir(cfg.OutputPath), 0755); err != nil {
 		return fmt.Errorf("failed to create log directory: %w", err)
@@ -50,42 +96,40 @@ func InitLogger(cfg *Config) error {
 	// Output to both file and console
 	multiWriter := io.MultiWriter(os.Stdout, writer)
 
-	// Set log level
-	var level slog.Level
-	switch cfg.Level {
-	case "debug":
-		level = slog.LevelDebug
-	case "info":
-		level = slog.LevelInfo
-	case "warn":
-		level = slog.LevelWarn
-	case "error":
-		level = slog.LevelError
-	default:
-		level = slog.LevelInfo
-	}
-
-	// Create handler
+	// Update the global logger with enhanced logging options
 	opts := &slog.HandlerOptions{
 		Level:     level,
 		AddSource: true,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Add timestamp in a more readable format
+			if a.Key == slog.TimeKey {
+				return slog.Attr{
+					Key:   slog.TimeKey,
+					Value: slog.StringValue(a.Value.Time().Format("2006-01-02 15:04:05.000")),
+				}
+			}
+			return a
+		},
 	}
 
+	// Create handler based on format
 	var handler slog.Handler
-	switch cfg.Format {
+	switch strings.ToLower(format) {
 	case "json":
 		handler = slog.NewJSONHandler(multiWriter, opts)
 	default:
 		handler = slog.NewTextHandler(multiWriter, opts)
 	}
 
-	// Update the global logger
 	Global = slog.New(handler)
 
+	// Log initialization with all relevant details
 	Global.Info("Logger initialized",
-		"level", cfg.Level,
-		"format", cfg.Format,
-		"path", cfg.OutputPath)
+		"level", level,
+		"format", format,
+		"path", cfg.OutputPath,
+		"env_level", os.Getenv(EnvLogLevel),
+		"env_format", os.Getenv(EnvLogFormat))
 
 	return nil
 }

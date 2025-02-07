@@ -1,24 +1,33 @@
-# MXTrack: ML/AI 模型文件加载的安全可观测性框架
-
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="../brand/logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="../brand/logo-light.png">
-    <img alt="MXTrack Logo" src="../brand/logo.png" width="320">
-  </picture>
+<a href="https://goreportcard.com/report/github.com/mxcrafts/mxtrack">
+  <img src="https://goreportcard.com/badge/github.com/mxcrafts/mxtrack" alt="Go Report Card">
+</a>
+<a href="https://godoc.org/github.com/mxcrafts/mxtrack">
+  <img src="https://godoc.org/github.com/mxcrafts/mxtrack?status.svg" alt="GoDoc">
+</a>
+<a href="LICENSE">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+</a>
 </p>
+
+
+<h3 align="center">
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <img src="../brand/mxtrack-holder.png" alt="MXTrack - ML/AI 模型文件加载的安全可观测性框架" width=100px>
+    <p>MXTrack - ML/AI 模型文件加载的安全可观测性框架</p>
+  </div>
+</h3>
+
 
 <p align="center">
   <a href="../README.md"><img alt="README in English" src="https://img.shields.io/badge/English-d9d9d9"></a>
   <a href="README_CN.md"><img alt="简体中文版自述文件" src="https://img.shields.io/badge/简体中文-d9d9d9"></a>
 </p>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/mxcrafts/mxtrack)](https://goreportcard.com/report/github.com/mxcrafts/mxtrack)
-[![GoDoc](https://godoc.org/github.com/mxcrafts/mxtrack?status.svg)](https://godoc.org/github.com/mxcrafts/mxtrack)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
 ## 概述
 
+> [!NOTE]
 > MXTrack 是一个开源的安全可观测性工具，专门用于监控和分析机器学习（ML）和人工智能（AI）模型文件在加载和执行过程中的潜在风险。该工具使用 Golang 和 eBPF（扩展的伯克利包过滤器）构建，将低级内核跟踪的效率与现代系统编程的稳健性相结合，提供高性能、低开销的监控。通过关注关键系统行为和配置，MXTrack 帮助开发人员、MLOps 工程师和安全研究人员识别 ML/AI 工作流中的漏洞、未授权访问和异常活动。
 
 ## 技术亮点
@@ -239,7 +248,7 @@ make package    # 创建发布包
 ### 联系方式
 
 - 问题反馈：GitHub Issues
-- 电子邮件：support@mxcrafts.com
+- 电子邮件：support@mx-crafts.com
 - 社区：Discussions
 
 ### 致谢
@@ -247,3 +256,17 @@ make package    # 创建发布包
 - eBPF
 - Cilium
 - Go
+
+
+## Cite mxtrack
+
+If you use `mxtrack` in your publication, please cite it by using the following BibTeX entry.
+
+```bibtex
+@Misc{mxtrack,
+  title =        {`mxtrack`: security observability framework for ml/ai model file loading.},
+  author =       {@bayuncao},
+  howpublished = {\url{https://github.com/mxcrafts/mxtrack}},
+  year =         {2025}
+}
+```

@@ -1,12 +1,24 @@
-# MXTrack: Security Observability Framework for ML/AI Model File Loading
-
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="brand/logo-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="brand/logo-light.png">
-    <img alt="MXTrack Logo" src="brand/logo.png" width="320">
-  </picture>
+<a href="https://goreportcard.com/report/github.com/mxcrafts/mxtrack">
+  <img src="https://goreportcard.com/badge/github.com/mxcrafts/mxtrack" alt="Go Report Card">
+</a>
+<a href="https://godoc.org/github.com/mxcrafts/mxtrack">
+  <img src="https://godoc.org/github.com/mxcrafts/mxtrack?status.svg" alt="GoDoc">
+</a>
+<a href="LICENSE">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
+</a>
 </p>
+
+
+<h3 align="center">
+  <div style="display:flex;flex-direction:column;align-items:center;">
+    <img src="./brand/mxtrack-holder.png" alt="MXTrack - Security Observability Framework for ML/AI Model File Loading" width=100px>
+    <p>MXTrack - Security Observability Framework for ML/AI Model File Loading</p>
+  </div>
+</h3>
+
+
 
 <p align="center">
   <a href="README.md"><img alt="README in English" src="https://img.shields.io/badge/English-d9d9d9"></a>
@@ -14,12 +26,10 @@
 </p>
 
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/mxcrafts/mxtrack)](https://goreportcard.com/report/github.com/mxcrafts/mxtrack)
-[![GoDoc](https://godoc.org/github.com/mxcrafts/mxtrack?status.svg)](https://godoc.org/github.com/mxcrafts/mxtrack)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overview
 
+> [!NOTE]
 > MXTrack is an open-source security observability tool designed to monitor and analyze potential risks during the loading and execution of machine learning (ML) and artificial intelligence (AI) model files. Built with Golang and eBPF (Extended Berkeley Packet Filter), MXTrack combines the efficiency of low-level kernel tracing with the robustness of modern systems programming to deliver high-performance, low-overhead monitoring. By focusing on critical system behaviors and configurations, MXTrack helps developers, MLOps engineers, and security researchers identify vulnerabilities, unauthorized access, and anomalous activities in ML/AI workflows.
 
 ## Technical Highlights
@@ -252,7 +262,7 @@ This project is licensed under the [MIT License](LICENSE).
 ### Contact
 
 - Issues: GitHub Issues
-- Email: support@mxcrafts.com
+- Email: support@mx-crafts.com
 - Community: Discussions
 
 ### Acknowledgments
@@ -260,3 +270,17 @@ This project is licensed under the [MIT License](LICENSE).
 - eBPF
 - Cilium
 - Go
+
+
+## Cite mxtrack
+
+If you use `mxtrack` in your publication, please cite it by using the following BibTeX entry.
+
+```bibtex
+@Misc{mxtrack,
+  title =        {`mxtrack`: security observability framework for ml/ai model file loading.},
+  author =       {@bayuncao},
+  howpublished = {\url{https://github.com/mxcrafts/mxtrack}},
+  year =         {2025}
+}
+```
