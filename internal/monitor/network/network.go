@@ -52,12 +52,9 @@ func (m *Monitor) Start(ctx context.Context) error {
 	m.isRunning = true
 	m.mu.Unlock()
 
-	logger.Global.Info("Starting network monitor...")
-
 	if err := loadBpfObjects(&m.objs, nil); err != nil {
 		return fmt.Errorf("loading objects: %w", err)
 	}
-	logger.Global.Info("Successfully loaded eBPF objects")
 
 	// Get network interface
 	iface := "lo" // Default to local loopback interface
@@ -78,7 +75,6 @@ func (m *Monitor) Start(ctx context.Context) error {
 		return fmt.Errorf("attaching XDP: %w", err)
 	}
 	m.link = l
-	logger.Global.Info("Successfully attached XDP program")
 
 	// Create a performance event reader
 	reader, err := perf.NewReader(m.objs.Events, 4096)

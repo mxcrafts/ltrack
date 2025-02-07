@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"log/slog"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/cilium/ebpf/rlimit"
 
 	"github.com/mxcrafts/mxtrack/internal/collector"
+	"github.com/mxcrafts/mxtrack/pkg/logger"
 	"github.com/mxcrafts/mxtrack/pkg/utils"
 )
 
@@ -72,13 +72,13 @@ func (m *Monitor) Start(ctx context.Context) error {
 			return fmt.Errorf("attaching kprobe %s: %w", probe.name, err)
 		}
 		m.links = append(m.links, kp)
-		slog.Info("Successfully attached kprobe",
+		logger.Global.Info("Successfully attached kprobe",
 			"probe", probe.name,
 			"program", fmt.Sprintf("%T", probe.program))
 	}
 
 	// Add debug logs
-	slog.Info("Probe registration statistics",
+	logger.Global.Info("Probe registration statistics",
 		"total", len(probes),
 		"registered", len(m.links),
 		"probes", strings.Join(func() []string {
@@ -104,7 +104,7 @@ func (m *Monitor) Start(ctx context.Context) error {
 	go m.handleEvents(ctx)
 	m.running = true
 
-	slog.Info("File monitor started",
+	logger.Global.Info("File monitor started",
 		"monitored_dirs_count", len(m.dirs),
 		"monitored_dirs", strings.Join(m.dirs, ", "),
 		"registered_probes", len(m.links))
@@ -123,17 +123,17 @@ func (m *Monitor) Stop(ctx context.Context) error {
 
 	if m.reader != nil {
 		if err := m.reader.Close(); err != nil {
-			slog.Error("Failed to close reader", "error", err)
+			logger.Global.Error("Failed to close reader", "error", err)
 		}
 	}
 
 	select {
 	case <-timeoutCtx.Done():
-		slog.Warn("Timeout while stopping monitor")
+		logger.Global.Warn("Timeout while stopping monitor")
 	default:
 		for _, link := range m.links {
 			if err := link.Close(); err != nil {
-				slog.Error("Failed to close probe", "error", err)
+				logger.Global.Error("Failed to close probe", "error", err)
 			}
 		}
 		m.links = nil
@@ -144,7 +144,7 @@ func (m *Monitor) Stop(ctx context.Context) error {
 		}
 
 		m.running = false
-		slog.Info("Monitor stopped")
+		logger.Global.Debug("Monitor stopped")
 	}
 
 	return nil
@@ -169,13 +169,13 @@ func getEventTypeName(eventType uint32) string {
 
 // Debug function to log the status of the probes
 func (m *Monitor) logProbeStatus() {
-	slog.Info("Currently registered probes",
+	logger.Global.Info("Currently registered probes",
 		"total", len(m.links),
 		"probes", fmt.Sprintf("%v", m.links))
 }
 
 func (m *Monitor) handleEvents(ctx context.Context) {
-	slog.Info("Starting file event processing")
+	logger.Global.Debug("Starting file event processing")
 	m.logProbeStatus()
 
 	errChan := make(chan error, 1)
@@ -184,14 +184,14 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
-				slog.Info("Received exit signal, stopping file event processing")
+				logger.Global.Debug("Received exit signal, stopping file event processing")
 				errChan <- nil
 				return
 			default:
 				record, err := m.reader.Read()
 				if err != nil {
 					if err == ringbuf.ErrClosed {
-						slog.Info("Ring buffer closed")
+						logger.Global.Debug("Ring buffer closed")
 						errChan <- nil
 						return
 					}
@@ -201,7 +201,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 
 				var event Event
 				if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &event); err != nil {
-					slog.Error("Failed to parse event", "error", err)
+					logger.Global.Error("Failed to parse event", "error", err)
 					continue
 				}
 
@@ -218,7 +218,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 				}
 
 				if !isMonitored {
-					slog.Debug("Ignoring event for non-monitored directory",
+					logger.Global.Debug("Ignoring event for non-monitored directory",
 						"path", fileName,
 						"event_type", getEventTypeName(event.EventType))
 					continue
@@ -226,7 +226,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 
 				baseFileName := filepath.Base(fileName)
 
-				slog.Info("File operation",
+				logger.Global.Info("File operation",
 					"type", getEventTypeName(event.EventType),
 					"path", fileName,
 					"filename", baseFileName,
@@ -243,10 +243,10 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 	select {
 	case err := <-errChan:
 		if err != nil {
-			slog.Error("Event processing error", "error", err)
+			logger.Global.Error("Event processing error", "error", err)
 		}
 	case <-ctx.Done():
-		slog.Info("Closing event processing")
+		logger.Global.Debug("Closing event processing")
 		<-errChan
 	}
 }

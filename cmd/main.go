@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"runtime/debug"
 
+	"github.com/mxcrafts/mxtrack/cmd/options"
 	"github.com/mxcrafts/mxtrack/internal/config"
 	"github.com/mxcrafts/mxtrack/internal/monitor/file"
 	"github.com/mxcrafts/mxtrack/internal/monitor/network"
@@ -19,8 +21,6 @@ import (
 )
 
 func main() {
-	// Print logo and version
-	logger.Global.Info(version.PrintLogo())
 
 	// Defer panic handler
 	defer func() {
@@ -31,18 +31,46 @@ func main() {
 		}
 	}()
 
-	// Load configuration
-	config, err := config.Load("policy.toml")
+	// Parse command line options
+	opts, err := options.Parse()
 	if err != nil {
-		logger.Global.Error("Failed to load configuration",
+		fmt.Printf("Error parsing options: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Validate options
+	if err := opts.Validate(); err != nil {
+		fmt.Printf("Invalid options: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Defer panic handler
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Global.Error("Program encountered a critical error",
+				"error", r,
+				"stack", string(debug.Stack()))
+			os.Exit(1)
+		}
+	}()
+
+	// Load configuration
+	config, err := config.Load(opts.ConfigPath)
+	if err != nil {
+		logger.Global.Error("Load Configuration Failed",
+			"path", opts.ConfigPath,
 			"error", err)
 		os.Exit(1)
 	}
 
 	// Initialize logger
 	if err := logger.InitLogger(&config.Log); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Failed to initialize logger: %v", err))
 	}
+
+	// Log startup message
+	logger.Global.Info("MXTrack Started",
+		"version", version.Version)
 
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -55,7 +83,7 @@ func main() {
 	if config.FileMonitor.Enabled {
 		monitor, err := file.NewMonitor()
 		if err != nil {
-			logger.Global.Error("Failed to create monitor",
+			logger.Global.Error("Create File Monitor Failed",
 				"error", err)
 			os.Exit(1)
 		}
@@ -65,7 +93,7 @@ func main() {
 			// Add monitored directories
 			for _, dir := range config.FileMonitor.Directories {
 				if err := fileMonitor.AddMonitoredDir(dir); err != nil {
-					logger.Global.Error("Failed to add monitored directory",
+					logger.Global.Error("Add Monitored Directory Failed",
 						"dir", dir,
 						"error", err)
 					continue
@@ -78,49 +106,50 @@ func main() {
 		go func() {
 			defer wg.Done()
 			if err := monitor.Start(ctx); err != nil {
-				logger.Global.Error("Failed to start monitoring",
+				logger.Global.Error("Start File Monitor Failed",
 					"error", err)
 				return
 			}
 			<-ctx.Done()
 			monitor.Stop(ctx)
 		}()
+	} else {
+		logger.Global.Info("File Monitor Disabled")
 	}
 
 	// Create exec monitor
 	if config.ExecMonitor.Enabled {
-		logger.Global.Info("Initializing exec monitor...",
+		logger.Global.Info("Initializing Exec Monitor...",
 			"watch_commands", config.ExecMonitor.WatchCommands)
 
 		monitor, err := exec.NewMonitor(config)
 		if err != nil {
-			logger.Global.Error("Failed to create exec monitor",
+			logger.Global.Error("Create Exec Monitor Failed",
 				"error", err)
 			os.Exit(1)
 		}
-		logger.Global.Info("Exec monitor created successfully")
+		logger.Global.Info("Exec Monitor Created Successfully!")
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			logger.Global.Info("Starting exec monitor goroutine")
 
 			if err := monitor.Start(ctx); err != nil {
-				logger.Global.Error("Failed to start exec monitoring",
+				logger.Global.Error("Start Exec Monitor Failed",
 					"error", err)
 				return
 			}
 
-			logger.Global.Info("Exec monitor is running",
+			logger.Global.Info("Exec Monitor Running...",
 				"watch_commands", config.ExecMonitor.WatchCommands)
 
 			<-ctx.Done()
 			logger.Global.Info("Stopping exec monitor...")
 			monitor.Stop(ctx)
-			logger.Global.Info("Exec monitor stopped successfully")
+			logger.Global.Info("Exec Monitor Stopped Successfully!")
 		}()
 	} else {
-		logger.Global.Info("Exec monitor is disabled in configuration")
+		logger.Global.Info("Exec Monitor Disabled")
 	}
 
 	// Create network monitor
@@ -131,34 +160,33 @@ func main() {
 
 		monitor, err := network.NewMonitor(config)
 		if err != nil {
-			logger.Global.Error("Failed to create network monitor",
+			logger.Global.Error("Create Network Monitor Failed",
 				"error", err)
 			os.Exit(1)
 		}
-		logger.Global.Info("Network monitor created successfully")
+		logger.Global.Info("Network Monitor Created Successfully!")
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			logger.Global.Info("Starting network monitor goroutine")
 
 			if err := monitor.Start(ctx); err != nil {
-				logger.Global.Error("Failed to start network monitoring",
+				logger.Global.Error("Start Network Monitor Failed",
 					"error", err, "stack", debug.Stack())
 				return
 			}
 
-			logger.Global.Info("Network monitor is running",
+			logger.Global.Info("Network Monitor Running...",
 				"monitored_ports", config.NetworkMonitor.Ports,
 				"monitored_protocols", config.NetworkMonitor.Protocols)
 
 			<-ctx.Done()
-			logger.Global.Info("Stopping network monitor...")
+			logger.Global.Info("Stopping Network Monitor...")
 			monitor.Stop(ctx)
-			logger.Global.Info("Network monitor stopped successfully")
+			logger.Global.Info("Network Monitor Stopped Successfully!")
 		}()
 	} else {
-		logger.Global.Info("Network monitor is disabled in configuration")
+		logger.Global.Info("Network Monitor Disabled")
 	}
 
 	// Signal handling
@@ -167,7 +195,7 @@ func main() {
 
 	// Wait for signal
 	sig := <-sigChan
-	logger.Global.Info("Received signal, preparing to exit",
+	logger.Global.Info("Received Signal, Preparing Exit",
 		"signal", sig.String())
 
 	// Cancel context
@@ -182,8 +210,8 @@ func main() {
 
 	select {
 	case <-done:
-		logger.Global.Info("Program exited normally")
+		logger.Global.Info("Program Exited Normally!")
 	case <-time.After(5 * time.Second):
-		logger.Global.Warn("Program exit timed out")
+		logger.Global.Warn("Program Exit Timed Out!")
 	}
 }
