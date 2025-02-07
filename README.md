@@ -16,7 +16,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/mxcrafts/mxtrack)](https://goreportcard.com/report/github.com/mxcrafts/mxtrack)
 [![GoDoc](https://godoc.org/github.com/mxcrafts/mxtrack?status.svg)](https://godoc.org/github.com/mxcrafts/mxtrack)
-[![License](https://img.shields.io/github/license/mxcrafts/mxtrack.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overview
 
