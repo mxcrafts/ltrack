@@ -13,7 +13,8 @@
 
 <h3 align="center">
   <div style="display:flex;flex-direction:column;align-items:center;">
-    <img src="../brand/mxtrack-holder.png" alt="MXTrack - ML/AI 模型文件加载的安全可观测性框架" width=100px>
+    <img src="../brand/logo-light.png" alt="MXTrack - ML/AI 模型文件加载的安全可观测性框架" width=100px>
+    <br />
     <p>MXTrack - ML/AI 模型文件加载的安全可观测性框架</p>
   </div>
 </h3>

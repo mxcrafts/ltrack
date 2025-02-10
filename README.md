@@ -13,7 +13,8 @@
 
 <h3 align="center">
   <div style="display:flex;flex-direction:column;align-items:center;">
-    <img src="./brand/mxtrack-holder.png" alt="MXTrack - Security Observability Framework for ML/AI Model File Loading" width=100px>
+    <img src="./brand/logo-light.png" alt="MXTrack - Security Observability Framework for ML/AI Model File Loading" width=100px>
+    <br />
     <p>MXTrack - Security Observability Framework for ML/AI Model File Loading</p>
   </div>
 </h3>
