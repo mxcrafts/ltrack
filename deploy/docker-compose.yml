@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  mxtrack:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: mxtrack:${MXTRACK_VERSION}
+    container_name: mxtrack
+    privileged: true  # Required for eBPF access
+    volumes:
+      - /sys/kernel/debug:/sys/kernel/debug:ro
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /proc:/proc
+      - /lib/modules:/lib/modules:ro
+      - mxtrack_logs:/var/log/mxtrack
+      - ../policy.toml:/app/external-config/policy.toml:ro
+    environment:
+      - MXTRACK_LOG_LEVEL=info
+      - MXTRACK_LOG_FORMAT=json
+    pid: host
+    network_mode: host
+    restart: unless-stopped
+
+volumes:
+  mxtrack_logs:
+    driver: local
