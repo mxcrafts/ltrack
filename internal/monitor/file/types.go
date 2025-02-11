@@ -17,7 +17,7 @@ const (
 )
 
 type Monitor struct {
-	objs      *bpfObjects
+	objs      *fileObjects
 	links     []link.Link
 	reader    *ringbuf.Reader
 	running   bool

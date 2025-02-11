@@ -17,7 +17,7 @@ import (
 	"github.com/mxcrafts/mxtrack/pkg/logger"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf ../../../pkg/ebpf/c/network.c
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS network ../../../pkg/ebpf/c/network.c
 
 func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	if err := rlimit.RemoveMemlock(); err != nil {
@@ -52,7 +52,7 @@ func (m *Monitor) Start(ctx context.Context) error {
 	m.isRunning = true
 	m.mu.Unlock()
 
-	if err := loadBpfObjects(&m.objs, nil); err != nil {
+	if err := loadNetworkObjects(&m.objs, nil); err != nil {
 		return fmt.Errorf("loading objects: %w", err)
 	}
 

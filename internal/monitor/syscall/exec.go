@@ -16,7 +16,7 @@ import (
 	"github.com/mxcrafts/mxtrack/pkg/utils"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf ../../../pkg/ebpf/c/exec.c
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS exec ../../../pkg/ebpf/c/exec.c
 
 func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	if err := rlimit.RemoveMemlock(); err != nil {

@@ -5,7 +5,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
-    image: mxtrack:${MXTRACK_VERSION}
+    image: mxtrack:${MXTRACK_VERSION:-latest}
     container_name: mxtrack
     privileged: true  # Required for eBPF access
     volumes:

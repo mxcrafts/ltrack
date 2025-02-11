@@ -24,7 +24,7 @@ type Event struct {
 // Monitor is a syscall monitor
 type Monitor struct {
 	config    *config.Config
-	objs      bpfObjects
+	objs      execObjects
 	link      link.Link
 	reader    *ringbuf.Reader
 	mu        sync.Mutex

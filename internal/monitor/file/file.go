@@ -19,7 +19,7 @@ import (
 	"github.com/mxcrafts/mxtrack/pkg/utils"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS bpf ../../../pkg/ebpf/c/file.c
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS file ../../../pkg/ebpf/c/file.c
 
 func NewMonitor() (collector.Collector, error) {
 	if err := rlimit.RemoveMemlock(); err != nil {
@@ -44,8 +44,8 @@ func (m *Monitor) Start(ctx context.Context) error {
 		return fmt.Errorf("monitor already running")
 	}
 
-	objs := bpfObjects{}
-	if err := loadBpfObjects(&objs, nil); err != nil {
+	objs := fileObjects{}
+	if err := loadFileObjects(&objs, nil); err != nil {
 		return fmt.Errorf("loading objects: %w", err)
 	}
 	m.objs = &objs

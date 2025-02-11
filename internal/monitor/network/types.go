@@ -21,7 +21,7 @@ type Event struct {
 
 type Monitor struct {
 	config    *config.Config
-	objs      bpfObjects
+	objs      networkObjects
 	link      link.Link
 	reader    *perf.Reader
 	ports     map[int]bool
