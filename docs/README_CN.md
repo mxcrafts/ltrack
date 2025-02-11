@@ -70,20 +70,51 @@
 
 ## 快速开始
 
-### 前置要求
-
-- Linux 内核版本 >= 4.18
-- Go 版本 >= 1.21
-- LLVM/Clang 11+
-
-### 安装
+### 容器启动
 
 ```bash
-# 从源码构建
+docker run -d \
+  --name mxtrack \
+  --privileged \
+  --pid host \
+  --network host \
+  -v /sys/kernel/debug:/sys/kernel/debug:ro \
+  -v /sys/fs/bpf:/sys/fs/bpf \
+  -v /proc:/proc \
+  -v /lib/modules:/lib/modules:ro \
+  -v mxtrack_logs:/var/log/mxtrack \
+  -v <path>/policy.toml:/app/external-config/policy.toml:ro \
+  -e MXTRACK_LOG_LEVEL=info \
+  -e MXTRACK_LOG_FORMAT=json \
+  mxcrafts/mxtrack:latest
+```
+
+### 构建本地镜像
+
+```bash
+cd deploy
+
+# Using latest version
+docker-compose up -d
+```
+
+### 通过编码编译
+
+#### Prerequisites
+
+- Linux kernel version >= 4.18
+- Go version >= 1.21
+- LLVM/Clang 11+
+
+#### 安装并运行
+
+```bash
+# 通过源码编译
 git clone https://github.com/mxcrafts/mxtrack.git
 cd mxtrack
-make && ./bin/mxtrack
+make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtrack --config policy.toml
 ```
+
 
 ### 配置
 
@@ -91,10 +122,10 @@ make && ./bin/mxtrack
 
 ```bash
 # 使用默认配置文件运行（policy.toml）
-./bin/mxtrack
+make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtrack
 
 # 使用指定的配置文件运行
-./bin/mxtrack --config /path/to/config.toml
+make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack --config policy.toml
 ```
 
 #### 日志级别配置
@@ -108,7 +139,7 @@ export MXTRACK_LOG_LEVEL=debug  # 选项：debug, info, warn, error
 export MXTRACK_LOG_FORMAT=json  # 选项：json, text
 
 # 使用环境变量设置运行
-./bin/mxtrack
+MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
 ```
 
 2. 配置文件（默认优先级）：

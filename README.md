@@ -74,19 +74,49 @@ Supports plugins for custom detectors and integrations, with Golang's static bin
 
 ## Quick Start
 
-### Prerequisites
+### Docker Images
+
+```bash
+docker run -d \
+  --name mxtrack \
+  --privileged \
+  --pid host \
+  --network host \
+  -v /sys/kernel/debug:/sys/kernel/debug:ro \
+  -v /sys/fs/bpf:/sys/fs/bpf \
+  -v /proc:/proc \
+  -v /lib/modules:/lib/modules:ro \
+  -v mxtrack_logs:/var/log/mxtrack \
+  -v <path>/policy.toml:/app/external-config/policy.toml:ro \
+  -e MXTRACK_LOG_LEVEL=info \
+  -e MXTRACK_LOG_FORMAT=json \
+  mxcrafts/mxtrack:latest
+```
+
+### Build a local docker image
+
+```bash
+cd deploy
+
+# Using latest version
+docker-compose up -d
+```
+
+### Build from source
+
+#### Prerequisites
 
 - Linux kernel version >= 4.18
 - Go version >= 1.21
 - LLVM/Clang 11+
 
-### Installation
+#### Installation
 
 ```bash
 # build from source
 git clone https://github.com/mxcrafts/mxtrack.git
 cd mxtrack
-make && ./bin/mxtrack
+make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtrack --config policy.toml
 ```
 
 ### Configuration
@@ -95,10 +125,10 @@ make && ./bin/mxtrack
 
 ```bash
 # Run with default configuration file (policy.toml)
-./bin/mxtrack
+MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
 
 # Run with specified configuration file
-./bin/mxtrack --config /path/to/config.toml
+MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack --config /path/to/config.toml
 ```
 
 ### Log Level Configuration
@@ -112,7 +142,7 @@ export MXTRACK_LOG_LEVEL=debug  # Options: debug, info, warn, error
 export MXTRACK_LOG_FORMAT=json  # Options: json, text
 
 # Run with environment settings
-./bin/mxtrack
+MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
 ```
 
 2. Configuration File (Default Priority):
