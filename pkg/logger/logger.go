@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	// 环境变量名称
-	EnvLogLevel  = "MXTRACK_LOG_LEVEL"
-	EnvLogFormat = "MXTRACK_LOG_FORMAT"
+	EnvLogLevel  = "LTRACK_LOG_LEVEL"
+	EnvLogFormat = "LTRACK_LOG_FORMAT"
 )
 
 var Global *slog.Logger
@@ -141,5 +140,5 @@ func SetupLogFile(logDir string) (string, error) {
 	}
 
 	timestamp := time.Now().Format("2006-01-02-15-04-05")
-	return filepath.Join(logDir, fmt.Sprintf("mxtrack-%s.log", timestamp)), nil
+	return filepath.Join(logDir, fmt.Sprintf("ltrack-%s.log", timestamp)), nil
 }

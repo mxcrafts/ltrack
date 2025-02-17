@@ -5,7 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/mxcrafts/mxtrack/pkg/logger"
+	"github.com/mxcrafts/ltrack/pkg/logger"
 )
 
 // ConfigMonitor Define configuration monitor

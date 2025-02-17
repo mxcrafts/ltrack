@@ -12,9 +12,9 @@ import (
 	"github.com/cilium/ebpf/perf"
 	"github.com/cilium/ebpf/rlimit"
 
-	"github.com/mxcrafts/mxtrack/internal/collector"
-	"github.com/mxcrafts/mxtrack/internal/config"
-	"github.com/mxcrafts/mxtrack/pkg/logger"
+	"github.com/mxcrafts/ltrack/internal/collector"
+	"github.com/mxcrafts/ltrack/internal/config"
+	"github.com/mxcrafts/ltrack/pkg/logger"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS network ../../../pkg/ebpf/c/network.c

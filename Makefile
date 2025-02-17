@@ -25,7 +25,7 @@ BPF_CFLAGS := -target bpfel \
 	$(CFLAGS)
 
 # Binary output settings
-BINARY_NAME := mxtrack
+BINARY_NAME := ltrack
 BINARY_DIR := bin
 
 # Default target

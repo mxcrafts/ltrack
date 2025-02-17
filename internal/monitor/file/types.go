@@ -4,7 +4,7 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 
-	"github.com/mxcrafts/mxtrack/internal/collector"
+	"github.com/mxcrafts/ltrack/internal/collector"
 )
 
 // Event types definition, matching with C code

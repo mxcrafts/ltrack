@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test directory configuration
-TEST_DIR="/home/lighthouse/test-mxtrack"
+TEST_DIR="/home/lighthouse/test-ltrack"
 
 # Color definition
 GREEN='\033[0;32m' 

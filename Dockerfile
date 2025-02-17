@@ -26,11 +26,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy the binary and necessary files
-COPY --from=builder /app/bin/mxtrack /app/bin/mxtrack
+COPY --from=builder /app/bin/ltrack /app/bin/ltrack
 COPY --from=builder /app/policy.toml /app/policy.toml
 
 # Create log directory
-RUN mkdir -p /var/log/mxtrack
+RUN mkdir -p /var/log/ltrack
 
-ENTRYPOINT ["/app/bin/mxtrack"]
+ENTRYPOINT ["/app/bin/ltrack"]
 CMD ["--config", "/app/policy.toml"] 

@@ -11,9 +11,9 @@ import (
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
 
-	"github.com/mxcrafts/mxtrack/internal/config"
-	"github.com/mxcrafts/mxtrack/pkg/logger"
-	"github.com/mxcrafts/mxtrack/pkg/utils"
+	"github.com/mxcrafts/ltrack/internal/config"
+	"github.com/mxcrafts/ltrack/pkg/logger"
+	"github.com/mxcrafts/ltrack/pkg/utils"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS exec ../../../pkg/ebpf/c/exec.c

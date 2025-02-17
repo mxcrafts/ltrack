@@ -11,13 +11,13 @@ import (
 
 	"runtime/debug"
 
-	"github.com/mxcrafts/mxtrack/cmd/options"
-	"github.com/mxcrafts/mxtrack/internal/config"
-	"github.com/mxcrafts/mxtrack/internal/monitor/file"
-	"github.com/mxcrafts/mxtrack/internal/monitor/network"
-	exec "github.com/mxcrafts/mxtrack/internal/monitor/syscall"
-	"github.com/mxcrafts/mxtrack/pkg/logger"
-	"github.com/mxcrafts/mxtrack/pkg/version"
+	"github.com/mxcrafts/ltrack/cmd/options"
+	"github.com/mxcrafts/ltrack/internal/config"
+	"github.com/mxcrafts/ltrack/internal/monitor/file"
+	"github.com/mxcrafts/ltrack/internal/monitor/network"
+	exec "github.com/mxcrafts/ltrack/internal/monitor/syscall"
+	"github.com/mxcrafts/ltrack/pkg/logger"
+	"github.com/mxcrafts/ltrack/pkg/version"
 )
 
 func main() {
@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// Log startup message
-	logger.Global.Info("MXTrack Started",
+	logger.Global.Info("ltrack Started",
 		"version", version.Version)
 
 	// Create context

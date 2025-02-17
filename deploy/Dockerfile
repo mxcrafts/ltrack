@@ -53,11 +53,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy the binary and default config
-COPY --from=builder /build/bin/mxtrack /app/bin/mxtrack
+COPY --from=builder /build/bin/ltrack /app/bin/ltrack
 COPY --from=builder /build/policy.toml /app/policy.toml
 
 # Create necessary directories
-RUN mkdir -p /var/log/mxtrack /sys/fs/bpf
+RUN mkdir -p /var/log/ltrack /sys/fs/bpf
 
 # Add entrypoint script
 COPY deploy/entrypoint.sh /app/entrypoint.sh

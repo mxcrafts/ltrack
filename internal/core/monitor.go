@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/mxcrafts/mxtrack/internal/collector"
-	"github.com/mxcrafts/mxtrack/internal/config"
+	"github.com/mxcrafts/ltrack/internal/collector"
+	"github.com/mxcrafts/ltrack/internal/config"
 )
 
 // Monitor represents the main monitoring system

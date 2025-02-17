@@ -1,10 +1,10 @@
-# MXTrack Monitor Policy
+# ltrack Monitor Policy
 
 # File Monitoring Configuration
 [file_monitor]
 enabled = true
 directories = [
-    "/home/lighthouse/test-mxtrack",
+    "/home/lighthouse/test-ltrack",
 ]
 
 # Process Execution Monitoring Configuration
@@ -26,7 +26,7 @@ protocols = ["tcp", "udp"]
 [log]
 level = "info"
 format = "json"
-output_path = "/var/log/mxtrack/app.log"
+output_path = "/var/log/ltrack/app.log"
 max_size = 100    # MB
 max_age = 7       # days
 max_backups = 5   # files

@@ -6,7 +6,7 @@ on:
       - 'v*.*.*'
       
 env:
-  DOCKER_IMAGE: mxcrafts/mxtrack
+  DOCKER_IMAGE: mxcrafts/ltrack
 
 jobs:
   docker:

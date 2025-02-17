@@ -6,7 +6,7 @@ import (
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/perf"
 
-	"github.com/mxcrafts/mxtrack/internal/config"
+	"github.com/mxcrafts/ltrack/internal/config"
 )
 
 // Event represents a network event

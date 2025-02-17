@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/mxcrafts/mxtrack/internal/collector"
+	"github.com/mxcrafts/ltrack/internal/collector"
 )
 
 // CompositeMonitor implements the Collector interface for multiple monitors

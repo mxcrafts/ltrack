@@ -1,9 +1,9 @@
 <p align="center">
-<a href="https://goreportcard.com/report/github.com/mxcrafts/mxtrack">
-  <img src="https://goreportcard.com/badge/github.com/mxcrafts/mxtrack" alt="Go Report Card">
+<a href="https://goreportcard.com/report/github.com/mxcrafts/ltrack">
+  <img src="https://goreportcard.com/badge/github.com/mxcrafts/ltrack" alt="Go Report Card">
 </a>
-<a href="https://godoc.org/github.com/mxcrafts/mxtrack">
-  <img src="https://godoc.org/github.com/mxcrafts/mxtrack?status.svg" alt="GoDoc">
+<a href="https://godoc.org/github.com/mxcrafts/ltrack">
+  <img src="https://godoc.org/github.com/mxcrafts/ltrack?status.svg" alt="GoDoc">
 </a>
 <a href="LICENSE">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
@@ -13,9 +13,9 @@
 
 <h3 align="center">
   <div style="display:flex;flex-direction:column;align-items:center;">
-    <img src="./brand/logo-light.png" alt="MXTrack - Security Observability Framework for ML/AI Model File Loading" width=100px>
+    <img src="./brand/logo-light.png" alt="ltrack - Security Observability Framework for ML/AI Model File Loading" width=100px>
     <br />
-    <p>MXTrack - Security Observability Framework for ML/AI Model File Loading</p>
+    <p>ltrack - Security Observability Framework for ML/AI Model File Loading</p>
   </div>
 </h3>
 
@@ -31,7 +31,7 @@
 ## Overview
 
 > [!NOTE]
-> MXTrack is an open-source security observability tool designed to monitor and analyze potential risks during the loading and execution of machine learning (ML) and artificial intelligence (AI) model files. Built with Golang and eBPF (Extended Berkeley Packet Filter), MXTrack combines the efficiency of low-level kernel tracing with the robustness of modern systems programming to deliver high-performance, low-overhead monitoring. By focusing on critical system behaviors and configurations, MXTrack helps developers, MLOps engineers, and security researchers identify vulnerabilities, unauthorized access, and anomalous activities in ML/AI workflows.
+> ltrack is an open-source security observability tool designed to monitor and analyze potential risks during the loading and execution of machine learning (ML) and artificial intelligence (AI) model files. Built with Golang and eBPF (Extended Berkeley Packet Filter), ltrack combines the efficiency of low-level kernel tracing with the robustness of modern systems programming to deliver high-performance, low-overhead monitoring. By focusing on critical system behaviors and configurations, ltrack helps developers, MLOps engineers, and security researchers identify vulnerabilities, unauthorized access, and anomalous activities in ML/AI workflows.
 
 ## Technical Highlights
 
@@ -53,7 +53,7 @@ Avoids reliance on external kernel modules or agents, reducing attack surfaces a
 - ⚡ **High Performance**: Low-overhead system monitoring based on eBPF technology
 - 🔧 **Configurable**: Flexible monitoring policy configuration via TOML files
 
-## Why MXTrack?
+## Why ltrack?
 
 - Low Overhead, High Fidelity
 eBPF's kernel-space execution eliminates costly context switches, enabling precise tracking of system events without degrading model inference or training performance.
@@ -78,7 +78,7 @@ Supports plugins for custom detectors and integrations, with Golang's static bin
 
 ```bash
 docker run -d \
-  --name mxtrack \
+  --name ltrack \
   --privileged \
   --pid host \
   --network host \
@@ -86,11 +86,11 @@ docker run -d \
   -v /sys/fs/bpf:/sys/fs/bpf \
   -v /proc:/proc \
   -v /lib/modules:/lib/modules:ro \
-  -v mxtrack_logs:/var/log/mxtrack \
+  -v ltrack_logs:/var/log/ltrack \
   -v <path>/policy.toml:/app/external-config/policy.toml:ro \
-  -e MXTRACK_LOG_LEVEL=info \
-  -e MXTRACK_LOG_FORMAT=json \
-  mxcrafts/mxtrack:latest
+  -e LTRACK_LOG_LEVEL=info \
+  -e LTRACK_LOG_FORMAT=json \
+  mxcrafts/ltrack:latest
 ```
 
 ### Build a local docker image
@@ -114,9 +114,9 @@ docker-compose up -d
 
 ```bash
 # build from source
-git clone https://github.com/mxcrafts/mxtrack.git
-cd mxtrack
-make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtrack --config policy.toml
+git clone https://github.com/mxcrafts/ltrack.git
+cd ltrack
+make && LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack ./bin/ltrack --config policy.toml
 ```
 
 ### Configuration
@@ -125,10 +125,10 @@ make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtra
 
 ```bash
 # Run with default configuration file (policy.toml)
-MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
+LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack
 
 # Run with specified configuration file
-MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack --config /path/to/config.toml
+LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack --config /path/to/config.toml
 ```
 
 ### Log Level Configuration
@@ -138,11 +138,11 @@ The log level can be configured in two ways:
 1. Environment Variable (Highest Priority):
 ```bash
 # Set log level via environment variable
-export MXTRACK_LOG_LEVEL=debug  # Options: debug, info, warn, error
-export MXTRACK_LOG_FORMAT=json  # Options: json, text
+export LTRACK_LOG_LEVEL=debug  # Options: debug, info, warn, error
+export LTRACK_LOG_FORMAT=json  # Options: json, text
 
 # Run with environment settings
-MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
+LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack
 ```
 
 2. Configuration File (Default Priority):
@@ -151,7 +151,7 @@ MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
 [log]
 level = "info"      # Options: debug, info, warn, error
 format = "json"     # Options: json, text
-output_path = "/var/log/mxtrack/app.log"
+output_path = "/var/log/ltrack/app.log"
 max_size = 100      # Maximum size in megabytes
 max_age = 7         # Maximum age in days
 max_backups = 5     # Maximum number of old log files
@@ -192,7 +192,7 @@ compress = true     # Compress old files
 ### Configuration File Structure
 
 ```toml
-# MXTrack Monitor Policy (policy.toml)
+# ltrack Monitor Policy (policy.toml)
 
 # File Monitoring Configuration
 [file_monitor]
@@ -220,7 +220,7 @@ protocols = ["tcp", "udp"]
 [log]
 level = "info"
 format = "json"
-output_path = "/var/log/mxtrack/app.log"
+output_path = "/var/log/ltrack/app.log"
 max_size = 100    # MB
 max_age = 7       # days
 max_backups = 5   # files
@@ -247,7 +247,7 @@ compress = true
 ### Running
 
 ```bash
-sudo mxtrack -config policy.toml
+sudo ltrack -config policy.toml
 ```
 
 
@@ -303,15 +303,15 @@ This project is licensed under the [MIT License](LICENSE).
 - Go
 
 
-## Cite mxtrack
+## Cite ltrack
 
-If you use `mxtrack` in your publication, please cite it by using the following BibTeX entry.
+If you use `ltrack` in your publication, please cite it by using the following BibTeX entry.
 
 ```bibtex
-@Misc{mxtrack,
-  title =        {`mxtrack`: security observability framework for ml/ai model file loading.},
+@Misc{ltrack,
+  title =        {`ltrack`: security observability framework for ml/ai model file loading.},
   author =       {@bayuncao},
-  howpublished = {\url{https://github.com/mxcrafts/mxtrack}},
+  howpublished = {\url{https://github.com/mxcrafts/ltrack}},
   year =         {2025}
 }
 ```

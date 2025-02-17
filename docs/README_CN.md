@@ -1,9 +1,9 @@
 <p align="center">
-<a href="https://goreportcard.com/report/github.com/mxcrafts/mxtrack">
-  <img src="https://goreportcard.com/badge/github.com/mxcrafts/mxtrack" alt="Go Report Card">
+<a href="https://goreportcard.com/report/github.com/mxcrafts/ltrack">
+  <img src="https://goreportcard.com/badge/github.com/mxcrafts/ltrack" alt="Go Report Card">
 </a>
-<a href="https://godoc.org/github.com/mxcrafts/mxtrack">
-  <img src="https://godoc.org/github.com/mxcrafts/mxtrack?status.svg" alt="GoDoc">
+<a href="https://godoc.org/github.com/mxcrafts/ltrack">
+  <img src="https://godoc.org/github.com/mxcrafts/ltrack?status.svg" alt="GoDoc">
 </a>
 <a href="LICENSE">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
@@ -13,9 +13,9 @@
 
 <h3 align="center">
   <div style="display:flex;flex-direction:column;align-items:center;">
-    <img src="../brand/logo-light.png" alt="MXTrack - ML/AI 模型文件加载的安全可观测性框架" width=100px>
+    <img src="../brand/logo-light.png" alt="ltrack - ML/AI 模型文件加载的安全可观测性框架" width=100px>
     <br />
-    <p>MXTrack - ML/AI 模型文件加载的安全可观测性框架</p>
+    <p>ltrack - ML/AI 模型文件加载的安全可观测性框架</p>
   </div>
 </h3>
 
@@ -29,7 +29,7 @@
 ## 概述
 
 > [!NOTE]
-> MXTrack 是一个开源的安全可观测性工具，专门用于监控和分析机器学习（ML）和人工智能（AI）模型文件在加载和执行过程中的潜在风险。该工具使用 Golang 和 eBPF（扩展的伯克利包过滤器）构建，将低级内核跟踪的效率与现代系统编程的稳健性相结合，提供高性能、低开销的监控。通过关注关键系统行为和配置，MXTrack 帮助开发人员、MLOps 工程师和安全研究人员识别 ML/AI 工作流中的漏洞、未授权访问和异常活动。
+> ltrack 是一个开源的安全可观测性工具，专门用于监控和分析机器学习（ML）和人工智能（AI）模型文件在加载和执行过程中的潜在风险。该工具使用 Golang 和 eBPF（扩展的伯克利包过滤器）构建，将低级内核跟踪的效率与现代系统编程的稳健性相结合，提供高性能、低开销的监控。通过关注关键系统行为和配置，ltrack 帮助开发人员、MLOps 工程师和安全研究人员识别 ML/AI 工作流中的漏洞、未授权访问和异常活动。
 
 ## 技术亮点
 
@@ -51,7 +51,7 @@
 - ⚡ **高性能**：基于 eBPF 技术的低开销系统监控
 - 🔧 **可配置**：通过 TOML 文件灵活配置监控策略
 
-## 为什么选择 MXTrack？
+## 为什么选择 ltrack？
 
 - 低开销，高保真
   eBPF 的内核空间执行消除了昂贵的上下文切换，能够在不影响模型推理或训练性能的情况下精确跟踪系统事件。
@@ -74,7 +74,7 @@
 
 ```bash
 docker run -d \
-  --name mxtrack \
+  --name ltrack \
   --privileged \
   --pid host \
   --network host \
@@ -82,11 +82,11 @@ docker run -d \
   -v /sys/fs/bpf:/sys/fs/bpf \
   -v /proc:/proc \
   -v /lib/modules:/lib/modules:ro \
-  -v mxtrack_logs:/var/log/mxtrack \
+  -v ltrack_logs:/var/log/ltrack \
   -v <path>/policy.toml:/app/external-config/policy.toml:ro \
-  -e MXTRACK_LOG_LEVEL=info \
-  -e MXTRACK_LOG_FORMAT=json \
-  mxcrafts/mxtrack:latest
+  -e LTRACK_LOG_LEVEL=info \
+  -e LTRACK_LOG_FORMAT=json \
+  mxcrafts/ltrack:latest
 ```
 
 ### 构建本地镜像
@@ -110,9 +110,9 @@ docker-compose up -d
 
 ```bash
 # 通过源码编译
-git clone https://github.com/mxcrafts/mxtrack.git
-cd mxtrack
-make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtrack --config policy.toml
+git clone https://github.com/mxcrafts/ltrack.git
+cd ltrack
+make && LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack ./bin/ltrack --config policy.toml
 ```
 
 
@@ -122,10 +122,10 @@ make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtra
 
 ```bash
 # 使用默认配置文件运行（policy.toml）
-make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack ./bin/mxtrack
+make && LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack ./bin/ltrack
 
 # 使用指定的配置文件运行
-make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack --config policy.toml
+make && LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack --config policy.toml
 ```
 
 #### 日志级别配置
@@ -135,11 +135,11 @@ make && MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack --config po
 1. 环境变量（最高优先级）：
 ```bash
 # 通过环境变量设置日志级别
-export MXTRACK_LOG_LEVEL=debug  # 选项：debug, info, warn, error
-export MXTRACK_LOG_FORMAT=json  # 选项：json, text
+export LTRACK_LOG_LEVEL=debug  # 选项：debug, info, warn, error
+export LTRACK_LOG_FORMAT=json  # 选项：json, text
 
 # 使用环境变量设置运行
-MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
+LTRACK_LOG_LEVEL=info LTRACK_LOG_FORMAT=json ./bin/ltrack
 ```
 
 2. 配置文件（默认优先级）：
@@ -148,7 +148,7 @@ MXTRACK_LOG_LEVEL=info MXTRACK_LOG_FORMAT=json ./bin/mxtrack
 [log]
 level = "info"      # 选项：debug, info, warn, error
 format = "json"     # 选项：json, text
-output_path = "/var/log/mxtrack/app.log"
+output_path = "/var/log/ltrack/app.log"
 max_size = 100      # 最大大小（MB）
 max_age = 7         # 最大保留天数
 max_backups = 5     # 最大备份文件数
@@ -189,7 +189,7 @@ compress = true     # 压缩旧文件
 ### 配置文件结构
 
 ```toml
-# MXTrack 监控策略 (policy.toml)
+# ltrack 监控策略 (policy.toml)
 
 # 文件监控配置
 [file_monitor]
@@ -217,7 +217,7 @@ protocols = ["tcp", "udp"]
 [log]
 level = "info"
 format = "json"
-output_path = "/var/log/mxtrack/app.log"
+output_path = "/var/log/ltrack/app.log"
 max_size = 100    # MB
 max_age = 7       # 天
 max_backups = 5   # 文件数
@@ -244,7 +244,7 @@ compress = true
 ### 运行
 
 ```bash
-sudo mxtrack -config policy.toml
+sudo ltrack -config policy.toml
 ```
 
 ## 开发
@@ -290,15 +290,15 @@ make package    # 创建发布包
 - Go
 
 
-## Cite mxtrack
+## Cite ltrack
 
-If you use `mxtrack` in your publication, please cite it by using the following BibTeX entry.
+If you use `ltrack` in your publication, please cite it by using the following BibTeX entry.
 
 ```bibtex
-@Misc{mxtrack,
-  title =        {`mxtrack`: security observability framework for ml/ai model file loading.},
+@Misc{ltrack,
+  title =        {`ltrack`: security observability framework for ml/ai model file loading.},
   author =       {@bayuncao},
-  howpublished = {\url{https://github.com/mxcrafts/mxtrack}},
+  howpublished = {\url{https://github.com/mxcrafts/ltrack}},
   year =         {2025}
 }
 ```

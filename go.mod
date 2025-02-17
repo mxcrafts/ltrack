@@ -1,4 +1,4 @@
-module github.com/mxcrafts/mxtrack
+module github.com/mxcrafts/ltrack
 
 go 1.23.4
 

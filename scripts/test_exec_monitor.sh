@@ -64,13 +64,13 @@ done
 
 echo -e "${GREEN}Test completed${NC}"
 echo -e "${YELLOW}Please check the log file to verify if the process execution is captured correctly${NC}"
-echo -e "Log location: /var/log/mxtrack/app.log"
+echo -e "Log location: /var/log/ltrack/app.log"
 
 # Display recent relevant logs
 echo -e "${GREEN}Recent process execution logs:${NC}"
-if [ -f /var/log/mxtrack/app.log ]; then
-    echo "grep 'Process execution detected' /var/log/mxtrack/app.log | tail -n 10"
-    grep "Process execution detected" /var/log/mxtrack/app.log | tail -n 10
+if [ -f /var/log/ltrack/app.log ]; then
+    echo "grep 'Process execution detected' /var/log/ltrack/app.log | tail -n 10"
+    grep "Process execution detected" /var/log/ltrack/app.log | tail -n 10
 else
     echo -e "${RED}Log file does not exist${NC}"
 fi 
