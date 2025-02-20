@@ -1,13 +1,7 @@
 <p align="center">
-<a href="https://goreportcard.com/report/github.com/mxcrafts/ltrack">
-  <img src="https://goreportcard.com/badge/github.com/mxcrafts/ltrack" alt="Go Report Card">
-</a>
-<a href="https://godoc.org/github.com/mxcrafts/ltrack">
-  <img src="https://godoc.org/github.com/mxcrafts/ltrack?status.svg" alt="GoDoc">
-</a>
-<a href="LICENSE">
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
-</a>
+<a href="https://goreportcard.com/report/github.com/mxcrafts/ltrack"><img src="https://goreportcard.com/badge/github.com/mxcrafts/ltrack" alt="Go Report Card"></a>
+<a href="https://godoc.org/github.com/mxcrafts/ltrack"><img src="https://godoc.org/github.com/mxcrafts/ltrack?status.svg" alt="GoDoc"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 
@@ -155,29 +149,6 @@ max_backups = 5     # 最大备份文件数
 compress = true     # 压缩旧文件
 ```
 
-#### 日志级别使用指南：
-
-- `debug`：调试用详细信息（开发环境）
-  - 函数进入/退出
-  - 变量值
-  - 详细的进程信息
-  - 性能指标
-
-- `info`：一般操作信息（生产环境）
-  - 服务启动/停止
-  - 配置加载
-  - 监控状态变更
-  - 正常操作
-
-- `warn`：潜在问题的警告消息
-  - 资源使用警告
-  - 可恢复的错误
-  - 性能下降
-
-- `error`：需要注意的错误情况
-  - 服务失败
-  - 严重错误
-  - 不可恢复的情况
 
 #### 环境建议：
 
@@ -269,25 +240,14 @@ make package    # 创建发布包
 | 进程监控 | < 0.5ms  | < 0.5%     | ~5MB      |
 | 网络监控 | < 1ms    | < 1%       | ~15MB     |
 
-### 贡献
-
-欢迎提交 Pull Requests 和 Issues！详情请查看我们的贡献指南。
-
 ### 许可证
 
 本项目采用 [MIT 许可证](../LICENSE)。
 
 ### 联系方式
 
-- 问题反馈：GitHub Issues
+- 问题反馈：[GitHub Issues](https://github.com/mxcrafts/ltrack/issues)
 - 电子邮件：support@mx-crafts.com
-- 社区：Discussions
-
-### 致谢
-
-- eBPF
-- Cilium
-- Go
 
 
 ## Cite ltrack

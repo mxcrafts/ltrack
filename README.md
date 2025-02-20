@@ -1,13 +1,7 @@
 <p align="center">
-<a href="https://goreportcard.com/report/github.com/mxcrafts/ltrack">
-  <img src="https://goreportcard.com/badge/github.com/mxcrafts/ltrack" alt="Go Report Card">
-</a>
-<a href="https://godoc.org/github.com/mxcrafts/ltrack">
-  <img src="https://godoc.org/github.com/mxcrafts/ltrack?status.svg" alt="GoDoc">
-</a>
-<a href="LICENSE">
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT">
-</a>
+<a href="https://goreportcard.com/report/github.com/mxcrafts/ltrack"><img src="https://goreportcard.com/badge/github.com/mxcrafts/ltrack" alt="Go Report Card"></a>
+<a href="https://godoc.org/github.com/mxcrafts/ltrack"><img src="https://godoc.org/github.com/mxcrafts/ltrack?status.svg" alt="GoDoc"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 
@@ -158,37 +152,6 @@ max_backups = 5     # Maximum number of old log files
 compress = true     # Compress old files
 ```
 
-#### Log Levels Usage Guide:
-
-- `debug`: Detailed information for debugging (Development)
-  - Function entry/exit
-  - Variable values
-  - Detailed process information
-  - Performance metrics
-
-- `info`: General operational information (Production)
-  - Service start/stop
-  - Configuration loading
-  - Monitor status changes
-  - Normal operations
-
-- `warn`: Warning messages for potential issues
-  - Resource usage warnings
-  - Recoverable errors
-  - Performance degradation
-
-- `error`: Error conditions requiring attention
-  - Service failures
-  - Critical errors
-  - Unrecoverable situations
-
-#### Environment Recommendations:
-
-- Development: `debug` level for maximum visibility
-- Testing: `debug` or `info` level based on testing needs
-- Staging: `info` level to match production
-- Production: `info` level for normal operations
-
 ### Configuration File Structure
 
 ```toml
@@ -275,9 +238,6 @@ make package    # Create release package
 make generate
 ```
 
-### Contributing
-
-Pull Requests and Issues are welcome! Please check our Contributing Guide for details.
 
 ### Performance Benchmarks
 
@@ -292,15 +252,8 @@ This project is licensed under the [MIT License](LICENSE).
 
 ### Contact
 
-- Issues: GitHub Issues
+- Issues: [GitHub Issues](https://github.com/mxcrafts/ltrack/issues)
 - Email: support@mx-crafts.com
-- Community: Discussions
-
-### Acknowledgments
-
-- eBPF
-- Cilium
-- Go
 
 
 ## Cite ltrack

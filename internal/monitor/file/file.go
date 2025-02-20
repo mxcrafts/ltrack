@@ -209,15 +209,17 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 				processName := utils.CleanProcessName(event.Comm[:])
 				parentProcessName := utils.CleanProcessName(event.Pcomm[:])
 
-				isMonitored := false
+				// Check if file is in monitored directories
+				monitored := false
 				for _, dir := range m.dirs {
 					if strings.HasPrefix(fileName, dir) {
-						isMonitored = true
+						monitored = true
 						break
 					}
 				}
 
-				if !isMonitored {
+				if !monitored {
+					// Use Debug level instead of Trace
 					logger.Global.Debug("Ignoring event for non-monitored directory",
 						"path", fileName,
 						"event_type", getEventTypeName(event.EventType))

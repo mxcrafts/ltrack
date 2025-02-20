@@ -19,6 +19,15 @@ const (
 
 var Global *slog.Logger
 
+// 添加自定义日志级别常量
+const (
+	LevelTrace = slog.Level(-8)
+	LevelDebug = slog.LevelDebug
+	LevelInfo  = slog.LevelInfo
+	LevelWarn  = slog.LevelWarn
+	LevelError = slog.LevelError
+)
+
 func init() {
 	// Initialize the global logger
 	Global = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
