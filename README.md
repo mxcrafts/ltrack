@@ -29,6 +29,12 @@
 
 ## Technical Highlights
 
+
+
+https://github.com/user-attachments/assets/188f46c1-3e9c-4f47-a8e0-40b205a8dfec
+
+
+
 - eBPF-Powered Efficiency
 Leverages eBPF to perform lightweight, kernel-level event tracing without requiring kernel modifications. This minimizes runtime overhead (<3% CPU in most cases) while enabling real-time observation of system calls, network traffic, and file operations.
 
