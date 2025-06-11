@@ -19,7 +19,7 @@ const (
 
 var Global *slog.Logger
 
-// 添加自定义日志级别常量
+// Add custom log level constants
 const (
 	LevelTrace = slog.Level(-8)
 	LevelDebug = slog.LevelDebug
@@ -46,7 +46,7 @@ type Config struct {
 	Compress   bool   `toml:"compress"`    // compress old files
 }
 
-// getLogLevelFromEnv 从环境变量获取日志级别
+// getLogLevelFromEnv get log level from environment variable
 func getLogLevelFromEnv() slog.Level {
 	levelStr := strings.ToLower(os.Getenv(EnvLogLevel))
 	switch levelStr {
@@ -63,7 +63,7 @@ func getLogLevelFromEnv() slog.Level {
 	}
 }
 
-// InitLogger Initialize the logger according to the configuration
+// InitLogger initialize the logger according to the configuration
 func InitLogger(cfg *Config) error {
 	// Prioritize the logging level in the environment variable
 	level := getLogLevelFromEnv()
@@ -142,7 +142,7 @@ func InitLogger(cfg *Config) error {
 	return nil
 }
 
-// SetupLogFile creates log directory and returns file path
+// SetupLogFile create log directory and return file path
 func SetupLogFile(logDir string) (string, error) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create log directory: %w", err)

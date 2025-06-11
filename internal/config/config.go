@@ -5,6 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	"github.com/mxcrafts/ltrack/internal/types"
 	"github.com/mxcrafts/ltrack/pkg/logger"
 )
 
@@ -42,6 +43,66 @@ type Config struct {
 	} `toml:"system_monitor"`
 
 	Log logger.Config `toml:"log"`
+
+	Storage StorageConfig `toml:"storage"`
+}
+
+// StorageConfig 定义存储相关的配置
+type StorageConfig struct {
+	Enabled     bool              `toml:"enabled"`
+	Type        string            `toml:"type"`
+	Format      string            `toml:"format"`
+	Adapter     string            `toml:"adapter"`
+	FilePath    string            `toml:"file_path"`
+	MaxSize     int               `toml:"max_size"`
+	MaxAge      int               `toml:"max_age"`
+	MaxBackups  int               `toml:"max_backups"`
+	Compress    bool              `toml:"compress"`
+	RemoteAddr  string            `toml:"remote_addr"`
+	RemotePort  int               `toml:"remote_port"`
+	ExtraFields map[string]string `toml:"extra_fields"`
+}
+
+// ToStorageConfig 将配置转换为存储模块可用的配置结构
+func (sc *StorageConfig) ToStorageConfig() (types.StorageConfig, error) {
+	cfg := types.StorageConfig{
+		FilePath:    sc.FilePath,
+		MaxSize:     sc.MaxSize,
+		MaxAge:      sc.MaxAge,
+		MaxBackups:  sc.MaxBackups,
+		Compress:    sc.Compress,
+		RemoteAddr:  sc.RemoteAddr,
+		RemotePort:  sc.RemotePort,
+		ExtraFields: sc.ExtraFields,
+	}
+
+	// 设置输出类型
+	switch sc.Type {
+	case "file":
+		cfg.Type = types.OutputFile
+	case "stdout":
+		cfg.Type = types.OutputStdout
+	case "socket":
+		cfg.Type = types.OutputSocket
+	case "syslog":
+		cfg.Type = types.OutputSyslog
+	default:
+		return cfg, fmt.Errorf("未知的存储类型: %s", sc.Type)
+	}
+
+	// 设置输出格式
+	switch sc.Format {
+	case "json":
+		cfg.Format = types.FormatJSON
+	case "text":
+		cfg.Format = types.FormatText
+	case "ndjson":
+		cfg.Format = types.FormatNDJSON
+	default:
+		return cfg, fmt.Errorf("未知的存储格式: %s", sc.Format)
+	}
+
+	return cfg, nil
 }
 
 func Load(path string) (*Config, error) {
@@ -57,6 +118,20 @@ func Load(path string) (*Config, error) {
 		config.FileMonitor.MaxEvents = 1000
 	}
 
+	// 设置存储的默认值
+	if config.Storage.MaxSize == 0 {
+		config.Storage.MaxSize = 100
+	}
+	if config.Storage.MaxAge == 0 {
+		config.Storage.MaxAge = 7
+	}
+	if config.Storage.MaxBackups == 0 {
+		config.Storage.MaxBackups = 5
+	}
+	if config.Storage.FilePath == "" {
+		config.Storage.FilePath = "/var/log/ltrack/events.log"
+	}
+
 	// Validate configuration
 	if config.FileMonitor.Enabled && len(config.FileMonitor.Directories) == 0 {
 		return nil, fmt.Errorf("file monitor enabled but no directories specified")
@@ -64,6 +139,19 @@ func Load(path string) (*Config, error) {
 
 	if config.NetworkMonitor.Enabled && len(config.NetworkMonitor.Ports) == 0 {
 		return nil, fmt.Errorf("network monitor enabled but no ports specified")
+	}
+
+	// 验证存储配置
+	if config.Storage.Enabled {
+		if config.Storage.Type == "" {
+			config.Storage.Type = "file"
+		}
+		if config.Storage.Format == "" {
+			config.Storage.Format = "json"
+		}
+		if config.Storage.Type == "socket" && config.Storage.RemoteAddr == "" {
+			return nil, fmt.Errorf("storage type is socket but remote_addr not specified")
+		}
 	}
 
 	return &config, nil
