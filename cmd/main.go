@@ -212,14 +212,28 @@ func main() {
 			logger.Global.Info("Exec Monitor Running...",
 				"watch_commands", config.ExecMonitor.WatchCommands)
 
-			// Note: exec monitor may not implement Collect method, depending on its implementation
-			// If you need to collect events here, you need to confirm that exec.Monitor implements the collector.Collector interface
-			// The following is only an example comment
-			/*
-				if config.Storage.Enabled && eventChan != nil {
-					// Add exec monitor event collection logic here, if supported
+			// Check if storage is enabled to collect events
+			if config.Storage.Enabled && eventChan != nil {
+				eventCh, err := monitor.Collect(ctx)
+				if err != nil {
+					logger.Global.Error("Collect exec monitor events failed", "error", err)
+				} else {
+					// Forward events to storage system
+					go func() {
+						for {
+							select {
+							case <-ctx.Done():
+								return
+							case event, ok := <-eventCh:
+								if !ok {
+									return
+								}
+								eventChan <- event
+							}
+						}
+					}()
 				}
-			*/
+			}
 
 			<-ctx.Done()
 			logger.Global.Info("Stopping exec monitor...")
@@ -258,13 +272,28 @@ func main() {
 				"monitored_ports", config.NetworkMonitor.Ports,
 				"monitored_protocols", config.NetworkMonitor.Protocols)
 
-			// Note: network monitor may not implement Collect method, depending on its implementation
-			// If you need to collect events here, you need to confirm that network.Monitor implements the collector
-			/*
-				if config.Storage.Enabled && eventChan != nil {
-					// Add network monitor event collection logic here, if supported
+			// Check if storage is enabled to collect events
+			if config.Storage.Enabled && eventChan != nil {
+				eventCh, err := monitor.Collect(ctx)
+				if err != nil {
+					logger.Global.Error("Collect network monitor events failed", "error", err)
+				} else {
+					// Forward events to storage system
+					go func() {
+						for {
+							select {
+							case <-ctx.Done():
+								return
+							case event, ok := <-eventCh:
+								if !ok {
+									return
+								}
+								eventChan <- event
+							}
+						}
+					}()
 				}
-			*/
+			}
 
 			<-ctx.Done()
 			logger.Global.Info("Stopping Network Monitor...")

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/perf"
@@ -28,6 +29,7 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 		config:    cfg,
 		ports:     make(map[int]bool),
 		protocols: make(map[string]bool),
+		eventChan: make(chan collector.Event, 1000),
 	}
 
 	// Initialize monitored ports
@@ -56,25 +58,53 @@ func (m *Monitor) Start(ctx context.Context) error {
 		return fmt.Errorf("loading objects: %w", err)
 	}
 
-	// Get network interface
-	iface := "lo" // Default to local loopback interface
-	devID, err := net.InterfaceByName(iface)
-	if err != nil {
-		return fmt.Errorf("getting interface: %w", err)
-	}
-	logger.Global.Info("Network interface initialized",
-		"interface", iface,
-		"index", devID.Index)
+	// Get network interface - try multiple interfaces
+	interfaces := []string{"eth0", "ens33", "enp0s3", "lo"}
+	var devID *net.Interface
+	var err error
+	var iface string
 
-	// Attach XDP program
+	for _, ifName := range interfaces {
+		devID, err = net.InterfaceByName(ifName)
+		if err == nil {
+			iface = ifName
+			logger.Global.Info("Selected network interface",
+				"interface", iface,
+				"index", devID.Index)
+			break
+		}
+	}
+
+	if devID == nil {
+		return fmt.Errorf("failed to find a suitable network interface: %w", err)
+	}
+
+	// Try attaching with XDP generic mode first
+	logger.Global.Info("Attempting to attach XDP program in generic mode",
+		"interface", iface)
+
 	l, err := link.AttachXDP(link.XDPOptions{
 		Program:   m.objs.HandleXdp,
 		Interface: devID.Index,
+		Flags:     link.XDPGenericMode, // Use generic mode instead of native
 	})
+
 	if err != nil {
-		return fmt.Errorf("attaching XDP: %w", err)
+		logger.Global.Warn("Failed to attach XDP in generic mode, using alternative monitoring method",
+			"error", err)
+
+		// As a fallback, use perf event tracepoints instead
+		tp, tpErr := link.Tracepoint("net", "net_dev_queue", m.objs.HandleXdp, nil)
+		if tpErr != nil {
+			return fmt.Errorf("failed to attach alternative tracepoint: %w", tpErr)
+		}
+
+		logger.Global.Info("Successfully attached network tracepoint as fallback")
+		m.link = tp
+	} else {
+		m.link = l
+		logger.Global.Info("XDP program attached successfully in generic mode")
 	}
-	m.link = l
 
 	// Create a performance event reader
 	reader, err := perf.NewReader(m.objs.Events, 4096)
@@ -125,6 +155,30 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 
 			srcIP := intToIP(event.SrcAddr)
 			dstIP := intToIP(event.DstAddr)
+			protocolStr := protocolToString(event.Protocol)
+
+			// Create network event for collection
+			networkEvent := &NetworkEvent{
+				Type: "NETWORK_TRAFFIC",
+				Data: map[string]interface{}{
+					"src_ip":   srcIP,
+					"dst_ip":   dstIP,
+					"src_port": event.SrcPort,
+					"dst_port": event.DstPort,
+					"protocol": protocolStr,
+					"length":   event.DataLen,
+				},
+				Timestamp: time.Now(),
+			}
+
+			// Send event to collection channel
+			select {
+			case m.eventChan <- networkEvent:
+				// Event sent successfully
+			default:
+				// Channel buffer is full, log a warning
+				logger.Global.Warn("Network event channel buffer is full, dropping event")
+			}
 
 			// Record network events
 			logger.Global.Info("Network traffic detected",
@@ -132,7 +186,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 				"dst_ip", dstIP,
 				"src_port", event.SrcPort,
 				"dst_port", event.DstPort,
-				"protocol", protocolToString(event.Protocol),
+				"protocol", protocolStr,
 				"length", event.DataLen)
 		}
 	}
@@ -202,6 +256,5 @@ func (m *Monitor) GetType() string {
 
 // Collect implements the collector.Collector interface
 func (m *Monitor) Collect(ctx context.Context) (<-chan collector.Event, error) {
-	// TODO: Implement event collection
-	return nil, nil
+	return m.eventChan, nil
 }
