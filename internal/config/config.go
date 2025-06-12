@@ -47,7 +47,7 @@ type Config struct {
 	Storage StorageConfig `toml:"storage"`
 }
 
-// StorageConfig 定义存储相关的配置
+// StorageConfig Define storage related configuration
 type StorageConfig struct {
 	Enabled     bool              `toml:"enabled"`
 	Type        string            `toml:"type"`
@@ -63,7 +63,7 @@ type StorageConfig struct {
 	ExtraFields map[string]string `toml:"extra_fields"`
 }
 
-// ToStorageConfig 将配置转换为存储模块可用的配置结构
+// ToStorageConfig Convert configuration to storage module usable configuration structure
 func (sc *StorageConfig) ToStorageConfig() (types.StorageConfig, error) {
 	cfg := types.StorageConfig{
 		FilePath:    sc.FilePath,
@@ -76,7 +76,7 @@ func (sc *StorageConfig) ToStorageConfig() (types.StorageConfig, error) {
 		ExtraFields: sc.ExtraFields,
 	}
 
-	// 设置输出类型
+	// Set output type
 	switch sc.Type {
 	case "file":
 		cfg.Type = types.OutputFile
@@ -87,10 +87,10 @@ func (sc *StorageConfig) ToStorageConfig() (types.StorageConfig, error) {
 	case "syslog":
 		cfg.Type = types.OutputSyslog
 	default:
-		return cfg, fmt.Errorf("未知的存储类型: %s", sc.Type)
+		return cfg, fmt.Errorf("unknown storage type: %s", sc.Type)
 	}
 
-	// 设置输出格式
+	// Set output format
 	switch sc.Format {
 	case "json":
 		cfg.Format = types.FormatJSON
@@ -99,7 +99,7 @@ func (sc *StorageConfig) ToStorageConfig() (types.StorageConfig, error) {
 	case "ndjson":
 		cfg.Format = types.FormatNDJSON
 	default:
-		return cfg, fmt.Errorf("未知的存储格式: %s", sc.Format)
+		return cfg, fmt.Errorf("unknown storage format: %s", sc.Format)
 	}
 
 	return cfg, nil
@@ -118,7 +118,7 @@ func Load(path string) (*Config, error) {
 		config.FileMonitor.MaxEvents = 1000
 	}
 
-	// 设置存储的默认值
+	// Set default values for storage
 	if config.Storage.MaxSize == 0 {
 		config.Storage.MaxSize = 100
 	}
@@ -141,7 +141,7 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("network monitor enabled but no ports specified")
 	}
 
-	// 验证存储配置
+	// Validate storage configuration
 	if config.Storage.Enabled {
 		if config.Storage.Type == "" {
 			config.Storage.Type = "file"

@@ -81,44 +81,44 @@ func main() {
 	// Create wait group
 	var wg sync.WaitGroup
 
-	// 初始化存储系统
+	// Initialize storage system
 	var eventChan chan interface{}
 	var storageManager *storage.StorageManager
 
 	if config.Storage.Enabled {
-		logger.Global.Info("初始化存储系统...",
+		logger.Global.Info("Initializing storage system...",
 			"type", config.Storage.Type,
 			"format", config.Storage.Format,
 			"adapter", config.Storage.Adapter)
 
-		// 转换存储配置
+		// Convert storage configuration
 		storageCfg, err := config.Storage.ToStorageConfig()
 		if err != nil {
-			logger.Global.Error("转换存储配置失败", "error", err)
+			logger.Global.Error("Convert storage configuration failed", "error", err)
 			os.Exit(1)
 		}
 
-		// 创建存储管理器
+		// Create storage manager
 		storageManager, err = storage.NewStorageManager(storageCfg, config.Storage.Adapter)
 		if err != nil {
-			logger.Global.Error("创建存储管理器失败", "error", err)
+			logger.Global.Error("Create storage manager failed", "error", err)
 			os.Exit(1)
 		}
 		defer storageManager.Stop()
 
-		// 创建事件通道
+		// Create event channel
 		eventChan = make(chan interface{}, 1000)
 
-		// 启动存储处理
+		// Start storage processing
 		if err := storageManager.StartProcessing(eventChan); err != nil {
-			logger.Global.Error("启动存储处理失败", "error", err)
+			logger.Global.Error("Start storage processing failed", "error", err)
 			os.Exit(1)
 		}
 
-		logger.Global.Info("存储系统初始化成功",
+		logger.Global.Info("Storage system initialized successfully",
 			"file_path", config.Storage.FilePath)
 	} else {
-		logger.Global.Info("存储系统已禁用")
+		logger.Global.Info("Storage system disabled")
 	}
 
 	// Create file monitor
@@ -156,13 +156,13 @@ func main() {
 				return
 			}
 
-			// 如果存储系统已启用，收集文件监控事件
+			// If storage system is enabled, collect file monitor events
 			if config.Storage.Enabled && eventChan != nil && isCollector {
 				eventCh, err := fileCollector.Collect(ctx)
 				if err != nil {
-					logger.Global.Error("收集文件监控事件失败", "error", err)
+					logger.Global.Error("Collect file monitor events failed", "error", err)
 				} else {
-					// 转发事件到存储系统
+					// Forward events to storage system
 					go func() {
 						for {
 							select {
@@ -212,12 +212,12 @@ func main() {
 			logger.Global.Info("Exec Monitor Running...",
 				"watch_commands", config.ExecMonitor.WatchCommands)
 
-			// 注意：exec监控器可能没有实现Collect方法，取决于其实现
-			// 如需在此处收集事件，需先确认exec.Monitor是否实现了collector.Collector接口
-			// 以下仅为示例注释
+			// Note: exec monitor may not implement Collect method, depending on its implementation
+			// If you need to collect events here, you need to confirm that exec.Monitor implements the collector.Collector interface
+			// The following is only an example comment
 			/*
 				if config.Storage.Enabled && eventChan != nil {
-					// 在此处添加exec监控器事件收集逻辑，如果支持的话
+					// Add exec monitor event collection logic here, if supported
 				}
 			*/
 
@@ -258,12 +258,11 @@ func main() {
 				"monitored_ports", config.NetworkMonitor.Ports,
 				"monitored_protocols", config.NetworkMonitor.Protocols)
 
-			// 注意：网络监控器可能没有实现Collect方法，取决于其实现
-			// 如需在此处收集事件，需先确认network.Monitor是否实现了collector.Collector接口
-			// 以下仅为示例注释
+			// Note: network monitor may not implement Collect method, depending on its implementation
+			// If you need to collect events here, you need to confirm that network.Monitor implements the collector
 			/*
 				if config.Storage.Enabled && eventChan != nil {
-					// 在此处添加网络监控器事件收集逻辑，如果支持的话
+					// Add network monitor event collection logic here, if supported
 				}
 			*/
 

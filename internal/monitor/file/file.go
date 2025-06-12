@@ -236,7 +236,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 
 	errChan := make(chan error, 1)
 
-	// 定期清理缓存
+	// Clean up event cache periodically
 	cleanupTicker := time.NewTicker(eventCacheCleanInterval)
 	defer cleanupTicker.Stop()
 
@@ -267,19 +267,19 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 					continue
 				}
 
-				// 提取并清理文件名和进程名
+				// Extract and clean file name and process name
 				fileName := utils.CleanString(event.FileName[:])
 				processName := utils.CleanProcessName(event.Comm[:])
 				parentProcessName := utils.CleanProcessName(event.Pcomm[:])
 
-				// 检查空文件名
+				// Check for empty file name
 				if fileName == "" || len(strings.TrimSpace(fileName)) == 0 {
 					logger.Global.Debug("Skipping event with empty filename",
 						"event_type", getEventTypeName(event.EventType))
 					continue
 				}
 
-				// 检查是否监控该目录
+				// Check if the directory is being monitored
 				monitored := false
 				for _, dir := range m.dirs {
 					if strings.HasPrefix(fileName, dir) {
@@ -295,7 +295,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 					continue
 				}
 
-				// 事件去重检查
+				// Duplicate event check
 				if m.isDuplicateEvent(fileName, event.EventType, event.Pid) {
 					logger.Global.Debug("Skipping duplicate event",
 						"path", fileName,
@@ -306,7 +306,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 
 				baseFileName := filepath.Base(fileName)
 
-				// 创建采集事件
+				// Create collection event
 				m.eventChan <- &FileEvent{
 					Type: GetEventTypeName(event.EventType),
 					Data: map[string]interface{}{
@@ -322,7 +322,7 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 					Timestamp: time.Now(),
 				}
 
-				// 记录操作日志
+				// Record operation log
 				logger.Global.Info("File operation",
 					"type", getEventTypeName(event.EventType),
 					"path", fileName,
