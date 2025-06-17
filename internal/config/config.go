@@ -42,6 +42,13 @@ type Config struct {
 		Enabled bool `toml:"enabled"`
 	} `toml:"system_monitor"`
 
+	// HTTP服务配置
+	HttpServer struct {
+		Enabled bool   `toml:"enabled"`
+		Port    int    `toml:"port"`
+		Host    string `toml:"host"`
+	} `toml:"http_server"`
+
 	Log logger.Config `toml:"log"`
 
 	Storage StorageConfig `toml:"storage"`
@@ -130,6 +137,14 @@ func Load(path string) (*Config, error) {
 	}
 	if config.Storage.FilePath == "" {
 		config.Storage.FilePath = "/var/log/ltrack/events.log"
+	}
+
+	// 设置HTTP服务器默认值
+	if config.HttpServer.Enabled && config.HttpServer.Port == 0 {
+		config.HttpServer.Port = 8080
+	}
+	if config.HttpServer.Host == "" {
+		config.HttpServer.Host = "0.0.0.0"
 	}
 
 	// Validate configuration

@@ -17,6 +17,7 @@ import (
 	"github.com/mxcrafts/ltrack/internal/monitor/file"
 	"github.com/mxcrafts/ltrack/internal/monitor/network"
 	exec "github.com/mxcrafts/ltrack/internal/monitor/syscall"
+	"github.com/mxcrafts/ltrack/internal/server"
 	"github.com/mxcrafts/ltrack/internal/storage"
 	"github.com/mxcrafts/ltrack/pkg/logger"
 	"github.com/mxcrafts/ltrack/pkg/version"
@@ -84,6 +85,7 @@ func main() {
 	// Initialize storage system
 	var eventChan chan interface{}
 	var storageManager *storage.StorageManager
+	var httpServer *server.Server
 
 	if config.Storage.Enabled {
 		logger.Global.Info("Initializing storage system...",
@@ -119,6 +121,31 @@ func main() {
 			"file_path", config.Storage.FilePath)
 	} else {
 		logger.Global.Info("Storage system disabled")
+	}
+
+	// 初始化HTTP服务器
+	if config.HttpServer.Enabled {
+		logger.Global.Info("Initializing HTTP server...",
+			"host", config.HttpServer.Host,
+			"port", config.HttpServer.Port)
+
+		// 创建HTTP服务器
+		httpServer, err = server.NewServer(config)
+		if err != nil {
+			logger.Global.Error("Create HTTP server failed", "error", err)
+			os.Exit(1)
+		}
+
+		// 启动HTTP服务器
+		if err := httpServer.Start(ctx); err != nil {
+			logger.Global.Error("Start HTTP server failed", "error", err)
+			os.Exit(1)
+		}
+
+		logger.Global.Info("HTTP server initialized successfully",
+			"address", fmt.Sprintf("%s:%d", config.HttpServer.Host, config.HttpServer.Port))
+	} else {
+		logger.Global.Info("HTTP server disabled")
 	}
 
 	// Create file monitor
@@ -173,6 +200,11 @@ func main() {
 									return
 								}
 								eventChan <- event
+
+								// 如果HTTP服务器启用，发送事件到HTTP服务器
+								if config.HttpServer.Enabled && httpServer != nil {
+									httpServer.ProcessEvent(event)
+								}
 							}
 						}
 					}()
@@ -229,6 +261,11 @@ func main() {
 									return
 								}
 								eventChan <- event
+
+								// 如果HTTP服务器启用，发送事件到HTTP服务器
+								if config.HttpServer.Enabled && httpServer != nil {
+									httpServer.ProcessEvent(event)
+								}
 							}
 						}
 					}()
@@ -289,6 +326,11 @@ func main() {
 										return
 									}
 									eventChan <- event
+
+									// 如果HTTP服务器启用，发送事件到HTTP服务器
+									if config.HttpServer.Enabled && httpServer != nil {
+										httpServer.ProcessEvent(event)
+									}
 								}
 							}
 						}()
@@ -316,6 +358,15 @@ func main() {
 
 	// Cancel context
 	cancel()
+
+	// 停止HTTP服务器
+	if config.HttpServer.Enabled && httpServer != nil {
+		logger.Global.Info("Stopping HTTP server...")
+		if err := httpServer.Stop(ctx); err != nil {
+			logger.Global.Error("Failed to stop HTTP server gracefully", "error", err)
+		}
+		logger.Global.Info("HTTP server stopped")
+	}
 
 	// Wait for all goroutines to complete with timeout
 	done := make(chan struct{})
