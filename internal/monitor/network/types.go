@@ -11,7 +11,17 @@ import (
 	"github.com/mxcrafts/ltrack/internal/config"
 )
 
+// 事件类型常量
+const (
+	EventTypeTraffic = 1
+	EventTypeBind    = 2
+	EventTypeListen  = 3
+	EventTypeConnect = 4
+	EventTypeClose   = 5
+)
+
 // Event represents a network event
+// 注意：此结构体的字段顺序必须与C代码中的event_t结构体完全一致
 type Event struct {
 	SrcAddr  uint32
 	DstAddr  uint32

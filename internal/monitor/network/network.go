@@ -20,6 +20,16 @@ import (
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc $BPF_CLANG -cflags $BPF_CFLAGS network ../../../pkg/ebpf/c/network.c
 
+// XDP程序附加模式
+const (
+	// XDP通用/仿真模式 - 最低性能但兼容性最好
+	XDP_FLAGS_SKB_MODE = 1 << 1
+	// XDP原生模式 - 高性能但需要驱动支持
+	XDP_FLAGS_DRV_MODE = 1 << 2
+	// XDP硬件模式 - 需要网卡硬件支持
+	XDP_FLAGS_HW_MODE = 1 << 3
+)
+
 func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	if err := rlimit.RemoveMemlock(); err != nil {
 		return nil, fmt.Errorf("failed to remove memlock: %w", err)
@@ -58,61 +68,26 @@ func (m *Monitor) Start(ctx context.Context) error {
 		return fmt.Errorf("loading objects: %w", err)
 	}
 
-	// Get network interface - try multiple interfaces
-	interfaces := []string{"eth0", "ens33", "enp0s3", "lo"}
-	var devID *net.Interface
-	var err error
-	var iface string
-
-	for _, ifName := range interfaces {
-		devID, err = net.InterfaceByName(ifName)
-		if err == nil {
-			iface = ifName
-			logger.Global.Info("Selected network interface",
-				"interface", iface,
-				"index", devID.Index)
-			break
-		}
-	}
-
-	if devID == nil {
-		return fmt.Errorf("failed to find a suitable network interface: %w", err)
-	}
-
-	// Try attaching with XDP generic mode first
-	logger.Global.Info("Attempting to attach XDP program in generic mode",
-		"interface", iface)
-
-	l, err := link.AttachXDP(link.XDPOptions{
-		Program:   m.objs.HandleXdp,
-		Interface: devID.Index,
-		Flags:     link.XDPGenericMode, // Use generic mode instead of native
-	})
-
+	// 尝试加载程序
+	err := m.tryAttachXDP()
 	if err != nil {
-		logger.Global.Warn("Failed to attach XDP in generic mode, using alternative monitoring method",
-			"error", err)
-
-		// As a fallback, use perf event tracepoints instead
-		tp, tpErr := link.Tracepoint("net", "net_dev_queue", m.objs.HandleXdp, nil)
-		if tpErr != nil {
-			return fmt.Errorf("failed to attach alternative tracepoint: %w", tpErr)
-		}
-
-		logger.Global.Info("Successfully attached network tracepoint as fallback")
-		m.link = tp
-	} else {
-		m.link = l
-		logger.Global.Info("XDP program attached successfully in generic mode")
+		m.objs.Close()
+		m.isRunning = false
+		return fmt.Errorf("failed to attach XDP program: %w", err)
 	}
 
-	// Create a performance event reader
+	// 创建性能事件读取器
 	reader, err := perf.NewReader(m.objs.Events, 4096)
 	if err != nil {
-		m.link.Close()
+		if m.link != nil {
+			m.link.Close()
+		}
+		m.objs.Close()
+		m.isRunning = false
 		return fmt.Errorf("creating perf reader: %w", err)
 	}
 	m.reader = reader
+
 	logger.Global.Info("Network monitor started successfully",
 		"monitored_ports", m.config.NetworkMonitor.Ports,
 		"monitored_protocols", m.config.NetworkMonitor.Protocols)
@@ -120,6 +95,80 @@ func (m *Monitor) Start(ctx context.Context) error {
 	go m.handleEvents(ctx)
 
 	return nil
+}
+
+// 尝试以不同模式附加XDP程序
+func (m *Monitor) tryAttachXDP() error {
+	// 尝试获取可用的网络接口
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return fmt.Errorf("getting network interfaces: %w", err)
+	}
+
+	// 过滤出可能支持XDP的接口
+	var candidateInterfaces []net.Interface
+	for _, iface := range interfaces {
+		// 跳过禁用的接口
+		if iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		// 优先选择真实物理接口，但也包括虚拟接口和本地环回作为备选
+		candidateInterfaces = append(candidateInterfaces, iface)
+	}
+
+	if len(candidateInterfaces) == 0 {
+		return fmt.Errorf("no available network interfaces found")
+	}
+
+	// 按优先级排序 - 优先使用物理接口
+	// 本实现简单起见，不做排序
+
+	// 不同的XDP附加模式
+	modes := []struct {
+		name  string
+		flags link.XDPAttachFlags
+	}{
+		{"Generic/SKB", link.XDPGenericMode},
+		{"Native/Driver", link.XDPDriverMode},
+		{"Hardware Offload", link.XDPOffloadMode},
+		{"Default", 0},
+	}
+
+	// 尝试在每个接口上使用不同模式附加XDP程序
+	for _, iface := range candidateInterfaces {
+		for _, mode := range modes {
+			logger.Global.Info("Attempting to attach XDP program",
+				"interface", iface.Name,
+				"index", iface.Index,
+				"mode", mode.name)
+
+			// 尝试附加XDP程序
+			l, err := link.AttachXDP(link.XDPOptions{
+				Program:   m.objs.HandleXdp,
+				Interface: iface.Index,
+				Flags:     mode.flags,
+			})
+
+			if err != nil {
+				logger.Global.Debug("Failed to attach XDP program",
+					"interface", iface.Name,
+					"mode", mode.name,
+					"error", err)
+				continue
+			}
+
+			// 成功附加
+			m.link = l
+			logger.Global.Info("Successfully attached XDP program",
+				"interface", iface.Name,
+				"index", iface.Index,
+				"mode", mode.name)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("could not attach XDP program to any interface in any mode")
 }
 
 func (m *Monitor) handleEvents(ctx context.Context) {
@@ -155,30 +204,6 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 
 			srcIP := intToIP(event.SrcAddr)
 			dstIP := intToIP(event.DstAddr)
-			protocolStr := protocolToString(event.Protocol)
-
-			// Create network event for collection
-			networkEvent := &NetworkEvent{
-				Type: "NETWORK_TRAFFIC",
-				Data: map[string]interface{}{
-					"src_ip":   srcIP,
-					"dst_ip":   dstIP,
-					"src_port": event.SrcPort,
-					"dst_port": event.DstPort,
-					"protocol": protocolStr,
-					"length":   event.DataLen,
-				},
-				Timestamp: time.Now(),
-			}
-
-			// Send event to collection channel
-			select {
-			case m.eventChan <- networkEvent:
-				// Event sent successfully
-			default:
-				// Channel buffer is full, log a warning
-				logger.Global.Warn("Network event channel buffer is full, dropping event")
-			}
 
 			// Record network events
 			logger.Global.Info("Network traffic detected",
@@ -186,8 +211,34 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 				"dst_ip", dstIP,
 				"src_port", event.SrcPort,
 				"dst_port", event.DstPort,
-				"protocol", protocolStr,
+				"protocol", protocolToString(event.Protocol),
 				"length", event.DataLen)
+
+			// Create a network event for the collector channel
+			if m.eventChan != nil {
+				netEvent := &NetworkEvent{
+					Type:      "network",
+					Timestamp: time.Now(),
+					Data: map[string]interface{}{
+						"src_ip":     srcIP,
+						"dst_ip":     dstIP,
+						"src_port":   event.SrcPort,
+						"dst_port":   event.DstPort,
+						"protocol":   protocolToString(event.Protocol),
+						"data_len":   event.DataLen,
+						"event_type": "TRAFFIC", // 固定为流量事件
+					},
+				}
+
+				// Send the event to the event channel
+				select {
+				case m.eventChan <- netEvent:
+					// Event sent successfully
+				default:
+					// Channel is full, log and continue
+					logger.Global.Warn("Event channel is full, dropping network event")
+				}
+			}
 		}
 	}
 }
@@ -256,5 +307,12 @@ func (m *Monitor) GetType() string {
 
 // Collect implements the collector.Collector interface
 func (m *Monitor) Collect(ctx context.Context) (<-chan collector.Event, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if !m.isRunning {
+		return nil, fmt.Errorf("monitor is not running")
+	}
+
 	return m.eventChan, nil
 }
