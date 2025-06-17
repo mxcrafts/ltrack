@@ -254,52 +254,53 @@ func main() {
 		if err != nil {
 			logger.Global.Error("Create Network Monitor Failed",
 				"error", err)
-			os.Exit(1)
-		}
-		logger.Global.Info("Network Monitor Created Successfully!")
+			logger.Global.Warn("Network monitoring will be disabled")
+		} else {
+			logger.Global.Info("Network Monitor Created Successfully!")
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 
-			if err := monitor.Start(ctx); err != nil {
-				logger.Global.Error("Start Network Monitor Failed",
-					"error", err, "stack", debug.Stack())
-				return
-			}
-
-			logger.Global.Info("Network Monitor Running...",
-				"monitored_ports", config.NetworkMonitor.Ports,
-				"monitored_protocols", config.NetworkMonitor.Protocols)
-
-			// Check if storage is enabled to collect events
-			if config.Storage.Enabled && eventChan != nil {
-				eventCh, err := monitor.Collect(ctx)
-				if err != nil {
-					logger.Global.Error("Collect network monitor events failed", "error", err)
-				} else {
-					// Forward events to storage system
-					go func() {
-						for {
-							select {
-							case <-ctx.Done():
-								return
-							case event, ok := <-eventCh:
-								if !ok {
-									return
-								}
-								eventChan <- event
-							}
-						}
-					}()
+				if err := monitor.Start(ctx); err != nil {
+					logger.Global.Error("Start Network Monitor Failed",
+						"error", err, "stack", debug.Stack())
+					return
 				}
-			}
 
-			<-ctx.Done()
-			logger.Global.Info("Stopping Network Monitor...")
-			monitor.Stop(ctx)
-			logger.Global.Info("Network Monitor Stopped Successfully!")
-		}()
+				logger.Global.Info("Network Monitor Running...",
+					"monitored_ports", config.NetworkMonitor.Ports,
+					"monitored_protocols", config.NetworkMonitor.Protocols)
+
+				// Check if storage is enabled to collect events
+				if config.Storage.Enabled && eventChan != nil {
+					eventCh, err := monitor.Collect(ctx)
+					if err != nil {
+						logger.Global.Error("Collect network monitor events failed", "error", err)
+					} else {
+						// Forward events to storage system
+						go func() {
+							for {
+								select {
+								case <-ctx.Done():
+									return
+								case event, ok := <-eventCh:
+									if !ok {
+										return
+									}
+									eventChan <- event
+								}
+							}
+						}()
+					}
+				}
+
+				<-ctx.Done()
+				logger.Global.Info("Stopping Network Monitor...")
+				monitor.Stop(ctx)
+				logger.Global.Info("Network Monitor Stopped Successfully!")
+			}()
+		}
 	} else {
 		logger.Global.Info("Network Monitor Disabled")
 	}
