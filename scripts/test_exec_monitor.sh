@@ -1,76 +1,58 @@
 #!/bin/bash
 
 # Color definition
-RED='\033[0;31m'
-GREEN='\033[0;32m'
+GREEN='\033[0;32m' 
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Command list from policy.toml
-COMMANDS=("bash" "python" "nginx")
-TEST_DURATION=2
+# Print colored message
+print_step() {
+    echo -e "${GREEN}[TEST STEP]${NC} $1"
+    # Wait for 2 seconds to ensure eBPF has enough time to capture events
+    sleep 2
+}
 
-echo -e "${GREEN}Starting process execution monitoring test...${NC}"
+print_command() {
+    echo -e "${YELLOW}[COMMAND]${NC} $1"
+    # Execute command
+    eval $1
+    # Wait for 1 second to allow eBPF to complete capture
+    sleep 1
+}
 
-# Test each command
-for CMD in "${COMMANDS[@]}"; do
-    echo -e "${YELLOW}Testing command: $CMD${NC}"
-    
-    case $CMD in
-        "python")
-            # Create temporary Python script
-            cat > /tmp/test.py << 'EOF'
-print("Hello from Python test script!")
-EOF
-            echo "Executing Python script..."
-            python3 /tmp/test.py
-            rm -f /tmp/test.py
-            ;;
-            
-        "nginx")
-            echo "Testing nginx command..."
-            # If nginx is installed, try to start it
-            if command -v nginx &> /dev/null; then
-                sudo nginx -t
-            else
-                echo -e "${RED}nginx is not installed, skipping test${NC}"
-            fi
-            ;;
-            
-        "bash")
-            echo "Testing bash command..."
-            # Create and execute temporary bash script
-            cat > /tmp/test.sh << 'EOF'
-#!/bin/bash
-echo "Hello from bash test script!"
-EOF
-            chmod +x /tmp/test.sh
-            bash /tmp/test.sh
-            rm -f /tmp/test.sh
-            ;;
-            
-        *)
-            echo "Executing generic command: $CMD"
-            $CMD --version || $CMD -v || echo "Command execution failed"
-            ;;
-    esac
-    
-    # Wait for a while to observe logs
-    echo "Waiting for log output..."
-    sleep $TEST_DURATION
-    echo -e "${GREEN}Command $CMD test completed${NC}"
-    echo "----------------------------------------"
-done
+# Display script start information
+echo "====================================="
+echo "Exec Monitor Test Script Started"
+echo "====================================="
 
-echo -e "${GREEN}Test completed${NC}"
-echo -e "${YELLOW}Please check the log file to verify if the process execution is captured correctly${NC}"
-echo -e "Log location: /var/log/ltrack/app.log"
+# Test bash commands
+print_step "Testing bash command execution"
+print_command "bash -c 'echo \"Testing bash execution\"'"
+print_command "bash -c 'ls -la /tmp'"
 
-# Display recent relevant logs
-echo -e "${GREEN}Recent process execution logs:${NC}"
-if [ -f /var/log/ltrack/app.log ]; then
-    echo "grep 'Process execution detected' /var/log/ltrack/app.log | tail -n 10"
-    grep "Process execution detected" /var/log/ltrack/app.log | tail -n 10
-else
-    echo -e "${RED}Log file does not exist${NC}"
-fi 
+# Test python commands
+print_step "Testing python command execution"
+print_command "python3 -c 'print(\"Hello from Python\")'"
+print_command "python3 -c 'import os; print(\"Python process ID:\", os.getpid())'"
+
+# Test more complex command scenarios
+print_step "Testing command execution with arguments"
+print_command "bash -c 'echo \"Args test\" > /tmp/args_test.txt'"
+print_command "cat /tmp/args_test.txt"
+print_command "rm /tmp/args_test.txt"
+
+# Test script execution
+print_step "Testing script execution"
+print_command "echo '#!/bin/bash\necho \"Script execution test\"' > /tmp/test_script.sh"
+print_command "chmod +x /tmp/test_script.sh"
+print_command "bash /tmp/test_script.sh"
+print_command "rm /tmp/test_script.sh"
+
+# Test with environment variables
+print_step "Testing execution with environment variables"
+print_command "TEST_ENV_VAR='test_value' bash -c 'echo \"Environment variable: $TEST_ENV_VAR\"'"
+
+print_step "Test completed" 
+echo "====================================="
+echo "All test operations completed, please check log output"
+echo "=====================================" 

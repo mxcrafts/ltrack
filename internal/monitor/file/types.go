@@ -1,6 +1,8 @@
 package file
 
 import (
+	"time"
+
 	"github.com/cilium/ebpf/link"
 	"github.com/cilium/ebpf/ringbuf"
 
@@ -16,13 +18,16 @@ const (
 	EventRmdir  uint32 = 5
 )
 
+// Monitor structure definition
 type Monitor struct {
 	objs      *fileObjects
 	links     []link.Link
 	reader    *ringbuf.Reader
-	running   bool
 	dirs      []string
+	running   bool
 	eventChan chan collector.Event
+	// New event cache for deduplication
+	eventCache map[string]time.Time
 }
 
 // Event represents a file operation event
@@ -34,6 +39,28 @@ type Event struct {
 	FileName  [256]byte
 	Comm      [16]byte
 	Pcomm     [16]byte
+}
+
+// FileEvent implements the collector.Event interface for file events
+type FileEvent struct {
+	Type      string
+	Data      map[string]interface{}
+	Timestamp time.Time
+}
+
+// GetType returns the event type
+func (e *FileEvent) GetType() string {
+	return e.Type
+}
+
+// GetData returns the event data
+func (e *FileEvent) GetData() map[string]interface{} {
+	return e.Data
+}
+
+// GetTimestamp returns the event timestamp
+func (e *FileEvent) GetTimestamp() time.Time {
+	return e.Timestamp
 }
 
 // GetEventTypeName converts event type to string

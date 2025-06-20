@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"time"
 
 	"bytes"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/cilium/ebpf/rlimit"
 
+	"github.com/mxcrafts/ltrack/internal/collector"
 	"github.com/mxcrafts/ltrack/internal/config"
 	"github.com/mxcrafts/ltrack/pkg/logger"
 	"github.com/mxcrafts/ltrack/pkg/utils"
@@ -24,8 +26,9 @@ func NewMonitor(cfg *config.Config) (*Monitor, error) {
 	}
 
 	m := &Monitor{
-		config:   cfg,
-		commands: make(map[string]bool),
+		config:    cfg,
+		commands:  make(map[string]bool),
+		eventChan: make(chan collector.Event, 1000),
 	}
 
 	for _, cmd := range cfg.ExecMonitor.WatchCommands {
@@ -93,6 +96,31 @@ func (m *Monitor) handleEvents(ctx context.Context) {
 			argv := utils.CleanCommandArgs(event.Argv[:], event.ArgvSize)
 
 			if m.shouldMonitor(comm) {
+				// Create exec event for collection
+				execEvent := &ExecEvent{
+					Type: "PROCESS_EXEC",
+					Data: map[string]interface{}{
+						"command":  comm,
+						"filename": filename,
+						"argv":     argv,
+						"pid":      event.PID,
+						"ppid":     event.PPID,
+						"uid":      event.UID,
+						"gid":      event.GID,
+					},
+					Timestamp: time.Now(),
+				}
+
+				// Send event to collection channel
+				select {
+				case m.eventChan <- execEvent:
+					// Event sent successfully
+				default:
+					// Channel buffer is full, log a warning
+					logger.Global.Warn("Exec event channel buffer is full, dropping event")
+				}
+
+				// Record exec events
 				logger.Global.Info("Process execution detected",
 					"command", comm,
 					"filename", filename,
@@ -131,4 +159,9 @@ func (m *Monitor) Stop(ctx context.Context) {
 // GetType returns the type of the monitor
 func (m *Monitor) GetType() string {
 	return "exec"
+}
+
+// Collect implements the collector.Collector interface
+func (m *Monitor) Collect(ctx context.Context) (<-chan collector.Event, error) {
+	return m.eventChan, nil
 }

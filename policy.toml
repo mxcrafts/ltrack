@@ -31,3 +31,47 @@ max_size = 100    # MB
 max_age = 7       # days
 max_backups = 5   # files
 compress = true
+
+# Storage configuration
+# Storage system configuration, used to define how to store collected event data
+[storage]
+# Whether to enable the storage system
+enabled = true
+# Storage type: "file" (file), "stdout" (standard output), "socket" (network socket), "syslog" (system log)
+type = "file"
+# Storage format: "json" (JSON format), "text" (text format), "ndjson" (newline-delimited JSON)
+format = "json"
+# Log adapter: "standard", "elasticsearch", "logstash", "fluentd", "graylog"
+adapter = "logstash"
+# File path (used when type="file")
+file_path = "/var/log/ltrack/events.log"
+# Log file rotation settings
+max_size = 100    # Maximum size of a single file (MB)
+max_age = 7       # Maximum retention days for logs
+max_backups = 5   # Maximum number of retained files
+compress = true   # Whether to compress old files
+# Remote configuration (used when type="socket")
+remote_addr = ""  # Remote address
+remote_port = 0   # Remote port
+
+# Extra fields specific to the adapter
+# These fields will be added to each log record
+[storage.extra_fields]
+host = "localhost"
+service = "ltrack"
+environment = "production"
+
+# Adapter-specific configuration
+# The adapter will format and process events according to these configuration items
+
+# For logstash adapter, define tags
+tags = "security,monitoring"
+
+# For fluentd adapter, define tag
+tag = "ltrack.events"
+
+# For graylog adapter, define facility name
+facility = "ltrack"
+
+# For elasticsearch adapter, define index prefix
+index_prefix = "ltrack"

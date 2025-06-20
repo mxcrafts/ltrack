@@ -8,7 +8,7 @@
 #define ETH_P_IP 0x0800 /* Internet Protocol packet	*/ // ipv4
 #define ETH_HLEN 14 /* Total octets in header.	 */
 
-
+// 简化事件结构，减少寄存器使用
 struct event_t {
     __u32 src_addr;
     __u32 dst_addr;
@@ -24,61 +24,83 @@ struct {
     __uint(value_size, sizeof(u32));
 } events SEC(".maps");
 
+// XDP程序入口点 - 简化版
 SEC("xdp")
 int handle_xdp(struct xdp_md *ctx) {
     void *data_end = (void *)(long)ctx->data_end;
     void *data = (void *)(long)ctx->data;
-
-    // 1. 验证以太网头部
+    
+    // 确保我们至少有一个以太网头部
+    if (data + sizeof(struct ethhdr) > data_end) {
+        return XDP_PASS;
+    }
+    
     struct ethhdr *eth = data;
-    if ((void *)(eth + 1) > data_end)
+    
+    // 只处理IPv4
+    if (eth->h_proto != bpf_htons(ETH_P_IP)) {
         return XDP_PASS;
-
-    // 2. 只处理 IPv4 数据包
-    if (eth->h_proto != bpf_htons(ETH_P_IP))
+    }
+    
+    // 检查IP头部
+    struct iphdr *iph = (void *)(eth + 1);
+    if ((void *)(iph + 1) > data_end) {
         return XDP_PASS;
-
-    // 3. 验证 IP 头部
-    struct iphdr *ip = (void *)(eth + 1);
-    if ((void *)(ip + 1) > data_end)
+    }
+    
+    // 只处理TCP和UDP
+    if (iph->protocol != IPPROTO_TCP && iph->protocol != IPPROTO_UDP) {
         return XDP_PASS;
-
-    // 4. 只处理 TCP/UDP 数据包
-    if (ip->protocol != IPPROTO_TCP && ip->protocol != IPPROTO_UDP)
-        return XDP_PASS;
-
-    // 5. 根据协议类型处理
+    }
+    
     __u16 src_port = 0;
     __u16 dst_port = 0;
-
-    if (ip->protocol == IPPROTO_TCP) {
-        struct tcphdr *tcp = (void *)(ip + 1);
-        if ((void *)(tcp + 1) > data_end)
+    
+    // TCP数据包
+    if (iph->protocol == IPPROTO_TCP) {
+        struct tcphdr *tcp = (void *)(iph + 1);
+        if ((void *)(tcp + 1) > data_end) {
             return XDP_PASS;
-        
+        }
         src_port = bpf_ntohs(tcp->source);
         dst_port = bpf_ntohs(tcp->dest);
-    } else {
-        struct udphdr *udp = (void *)(ip + 1);
-        if ((void *)(udp + 1) > data_end)
+    } 
+    // UDP数据包
+    else if (iph->protocol == IPPROTO_UDP) {
+        struct udphdr *udp = (void *)(iph + 1);
+        if ((void *)(udp + 1) > data_end) {
             return XDP_PASS;
-        
+        }
         src_port = bpf_ntohs(udp->source);
         dst_port = bpf_ntohs(udp->dest);
     }
-
-    // 6. 创建并发送事件
-    struct event_t event = {
-        .src_addr = bpf_ntohl(ip->saddr),
-        .dst_addr = bpf_ntohl(ip->daddr),
-        .src_port = src_port,
-        .dst_port = dst_port,
-        .protocol = ip->protocol,
-        .data_len = (u32)(data_end - data),
-    };
-
+    
+    // 创建事件
+    struct event_t event;
+    __builtin_memset(&event, 0, sizeof(event));
+    
+    event.src_addr = iph->saddr;
+    event.dst_addr = iph->daddr;
+    event.src_port = src_port;
+    event.dst_port = dst_port;
+    event.protocol = iph->protocol;
+    event.data_len = (__u32)(data_end - data);
+    
+    // 发送事件
     bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
+    
+    return XDP_PASS;
+}
 
+// TC程序入口点 - 入站流量
+SEC("tc")
+int handle_tc_ingress(struct __sk_buff *skb) {
+    return XDP_PASS;
+}
+
+// TC程序入口点 - 出站流量
+SEC("tc")
+int handle_tc_egress(struct __sk_buff *skb) {
     return XDP_PASS;
 }
 

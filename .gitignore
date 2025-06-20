@@ -13,3 +13,5 @@
 
 # Dependencies
 /vendor/
+
+.cursorindexignore
