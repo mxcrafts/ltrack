@@ -22,6 +22,12 @@ enabled = true
 ports = [2333, 8888, 9999, 10086]
 protocols = ["tcp", "udp"]
 
+# HTTP服务器配置
+[http_server]
+enabled = true
+port = 8088
+host = "0.0.0.0"
+
 # Logging configuration
 [log]
 level = "info"
