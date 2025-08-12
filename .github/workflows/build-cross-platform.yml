@@ -1,0 +1,227 @@
+name: Build Cross-Platform Binaries
+
+on:
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: 'Version tag (optional)'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  build-debian:
+    runs-on: ubuntu-latest
+    name: Build Debian Compatible Binary
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            llvm \
+            libelf-dev \
+            make \
+            curl \
+            linux-tools-common \
+            linux-tools-generic
+
+      - name: Download vmlinux.h
+        run: |
+          mkdir -p ../output
+          curl -L -o ../vmlinux.h https://raw.githubusercontent.com/libbpf/libbpf/master/src/vmlinux.h || \
+          echo "// Fallback vmlinux.h" > ../vmlinux.h
+
+      - name: Generate eBPF code
+        run: |
+          cd internal
+          BPF_CLANG="clang" \
+          BPF_CFLAGS="-target bpfel -D__TARGET_ARCH_x86 -I$(pwd)/../../ -I/usr/include/x86_64-linux-gnu -g -O2 -Wall" \
+          go generate ./...
+
+      - name: Build Debian binary
+        run: |
+          mkdir -p bin
+          go build -buildvcs=false \
+            -ldflags '-linkmode external -extldflags "-static"' \
+            -tags 'netgo osusergo static_build' \
+            -a \
+            -o bin/ltrack-debian \
+            ./cmd
+
+      - name: Upload Debian binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ltrack-debian
+          path: bin/ltrack-debian
+          retention-days: 30
+
+  build-centos:
+    runs-on: ubuntu-latest
+    name: Build CentOS Compatible Binary
+    container:
+      image: centos:7
+    steps:
+      - name: Install dependencies
+        run: |
+          yum update -y
+          yum groupinstall -y "Development Tools"
+          yum install -y \
+            wget \
+            curl \
+            git \
+            clang \
+            llvm \
+            elfutils-libelf-devel
+
+      - name: Install Go
+        run: |
+          cd /tmp
+          wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz
+          tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz
+          echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
+          source /etc/profile
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download vmlinux.h
+        run: |
+          mkdir -p ../output
+          curl -L -o ../vmlinux.h https://raw.githubusercontent.com/libbpf/libbpf/master/src/vmlinux.h || \
+          echo "// Fallback vmlinux.h" > ../vmlinux.h
+
+      - name: Generate eBPF code
+        run: |
+          export PATH=$PATH:/usr/local/go/bin
+          cd internal
+          BPF_CLANG="clang" \
+          BPF_CFLAGS="-target bpfel -D__TARGET_ARCH_x86 -I$(pwd)/../../ -I/usr/include/x86_64-linux-gnu -g -O2 -Wall" \
+          go generate ./...
+
+      - name: Build CentOS binary
+        run: |
+          export PATH=$PATH:/usr/local/go/bin
+          mkdir -p bin
+          CGO_ENABLED=1 \
+          go build -buildvcs=false \
+            -ldflags '-linkmode external -extldflags "-static"' \
+            -tags 'netgo osusergo static_build' \
+            -a \
+            -o bin/ltrack-centos \
+            ./cmd
+
+      - name: Upload CentOS binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ltrack-centos
+          path: bin/ltrack-centos
+          retention-days: 30
+
+  create-release:
+    runs-on: ubuntu-latest
+    name: Create Release with Binaries
+    needs: [build-debian, build-centos]
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Debian binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ltrack-debian
+          path: ./release
+
+      - name: Download CentOS binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ltrack-centos
+          path: ./release
+
+      - name: Prepare release files
+        run: |
+          cd release
+          chmod +x ltrack-debian ltrack-centos
+          
+          # 创建压缩包
+          tar -czf ltrack-debian-amd64.tar.gz ltrack-debian
+          tar -czf ltrack-centos-amd64.tar.gz ltrack-centos
+          
+          # 生成校验和
+          sha256sum ltrack-debian > checksums.txt
+          sha256sum ltrack-centos >> checksums.txt
+          sha256sum *.tar.gz >> checksums.txt
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "latest" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag_name=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+            echo "tag_name=build-$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.tag_name }}
+          name: Cross-Platform Build ${{ steps.get_version.outputs.version }}
+          body: |
+            ## Cross-Platform Binaries
+
+            This release contains binaries built for different Linux distributions to solve glibc compatibility issues:
+
+            - **ltrack-debian**: Built on Ubuntu, compatible with Debian/Ubuntu and newer glibc systems
+            - **ltrack-centos**: Built on CentOS 7, compatible with CentOS/RHEL and older glibc systems
+
+            ### Problem Solved
+
+            This addresses the common error when running Debian-built binaries on CentOS:
+            ```
+            ./ltrack: /lib64/libc.so.6: version 'GLIBC_2.34' not found
+            ./ltrack: /lib64/libc.so.6: version 'GLIBC_2.32' not found
+            ```
+
+            ### Usage
+
+            Download the appropriate binary for your system:
+
+            ```bash
+            # For Debian/Ubuntu systems (glibc 2.31+)
+            wget https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.tag_name }}/ltrack-debian-amd64.tar.gz
+            tar -xzf ltrack-debian-amd64.tar.gz
+            sudo ./ltrack-debian
+
+            # For CentOS/RHEL systems (older glibc)
+            wget https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.tag_name }}/ltrack-centos-amd64.tar.gz
+            tar -xzf ltrack-centos-amd64.tar.gz
+            sudo ./ltrack-centos
+            ```
+
+            ### Verification
+
+            Verify file integrity using checksums:
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+          files: |
+            release/ltrack-debian
+            release/ltrack-centos
+            release/ltrack-debian-amd64.tar.gz
+            release/ltrack-centos-amd64.tar.gz
+            release/checksums.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
