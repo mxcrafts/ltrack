@@ -23,21 +23,64 @@
             color: #333;
             margin-top: 0;
         }
-        .log-types {
-            margin-top: 20px;
+        .log-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            overflow-x: auto;
+            white-space: nowrap;
         }
-        .log-type {
-            display: block;
+        .log-tab {
             padding: 10px 15px;
-            margin-bottom: 10px;
-            background-color: #4a86e8;
-            color: white;
+            margin-right: 5px;
+            background-color: #f1f1f1;
+            color: #333;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 5px 5px 0 0;
             transition: background-color 0.3s;
         }
-        .log-type:hover {
-            background-color: #3a76d8;
+        .log-tab.active {
+            background-color: #4a86e8;
+            color: white;
+        }
+        .log-tab:hover {
+            background-color: #e0e0e0;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .log-entry {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            border-left: 4px solid #4a86e8;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .log-time {
+            color: #777;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .log-content {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .log-data {
+            margin-top: 10px;
+            font-family: monospace;
+            background-color: #eee;
+            padding: 10px;
+            border-radius: 3px;
+            max-height: 200px;
+            overflow-y: auto;
         }
         .no-logs {
             margin-top: 20px;
@@ -47,23 +90,255 @@
             text-align: center;
             color: #666;
         }
+        .auto-refresh-status {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 10px;
+        }
+        .refresh-controls {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .settings {
+            display: flex;
+            align-items: center;
+        }
+        .refresh-button {
+            padding: 8px 15px;
+            background-color: #4a86e8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        .refresh-button:hover {
+            background-color: #3a76d8;
+        }
+        .clear-button {
+            padding: 8px 15px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .clear-button:hover {
+            background-color: #c0392b;
+        }
+        .max-logs-control {
+            margin-left: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .max-logs-control label {
+            margin-right: 5px;
+        }
+        .max-logs-control input {
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ltrack 监控日志</h1>
         
-        <div class="log-types">
-            {{if .LogTypes}}
-                {{range .LogTypes}}
-                    <a href="/logs?type={{.}}" class="log-type">{{.}} 日志</a>
-                {{end}}
-            {{else}}
-                <div class="no-logs">
-                    <p>当前没有可用的日志</p>
+        <div class="log-tabs">
+            <a href="#network" class="log-tab active" data-target="network">网络监控</a>
+            <a href="#file" class="log-tab" data-target="file">文件监控</a>
+            <a href="#exec" class="log-tab" data-target="exec">执行监控</a>
+        </div>
+        
+        <div class="refresh-controls">
+            <div class="settings">
+                <button id="pause-button" class="refresh-button">暂停自动刷新</button>
+                <span id="refresh-status" class="auto-refresh-status">下一次刷新: 5秒</span>
+                <div class="max-logs-control">
+                    <label for="max-logs">最大日志数:</label>
+                    <input type="number" id="max-logs" value="100" min="10" max="1000">
                 </div>
-            {{end}}
+            </div>
+            <button id="clear-logs" class="clear-button">清空日志</button>
+        </div>
+
+        <div id="network" class="tab-content active">
+            <div id="network-logs" class="logs-container"></div>
+        </div>
+        
+        <div id="file" class="tab-content">
+            <div id="file-logs" class="logs-container"></div>
+        </div>
+        
+        <div id="exec" class="tab-content">
+            <div id="exec-logs" class="logs-container"></div>
         </div>
     </div>
+
+    <script>
+        // 全局变量
+        let refreshInterval;
+        let isPaused = false;
+        let activeTab = 'network';
+        let maxLogs = 100;
+        let logs = {
+            'network': [],
+            'file': [],
+            'exec': []
+        };
+        
+        // DOM元素
+        const pauseButton = document.getElementById('pause-button');
+        const refreshStatus = document.getElementById('refresh-status');
+        const clearButton = document.getElementById('clear-logs');
+        const maxLogsInput = document.getElementById('max-logs');
+        const tabs = document.querySelectorAll('.log-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载所有类型的日志
+            fetchLogs('network');
+            fetchLogs('file');
+            fetchLogs('exec');
+            
+            // 启动自动刷新
+            startAutoRefresh();
+            
+            // 设置最大日志数量
+            maxLogsInput.addEventListener('change', function() {
+                maxLogs = parseInt(this.value) || 100;
+                // 清理超出的日志
+                for (const type in logs) {
+                    if (logs[type].length > maxLogs) {
+                        logs[type] = logs[type].slice(-maxLogs);
+                        renderLogs(type);
+                    }
+                }
+            });
+        });
+        
+        // 切换标签页
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                activeTab = this.dataset.target;
+                
+                // 更新活动标签样式
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 更新内容显示
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(activeTab).classList.add('active');
+            });
+        });
+        
+        // 暂停/恢复自动刷新
+        pauseButton.addEventListener('click', function() {
+            if (isPaused) {
+                // 恢复刷新
+                isPaused = false;
+                pauseButton.textContent = '暂停自动刷新';
+                startAutoRefresh();
+            } else {
+                // 暂停刷新
+                isPaused = true;
+                pauseButton.textContent = '恢复自动刷新';
+                clearInterval(refreshInterval);
+                refreshStatus.textContent = '自动刷新已暂停';
+            }
+        });
+        
+        // 清空日志
+        clearButton.addEventListener('click', function() {
+            logs[activeTab] = [];
+            renderLogs(activeTab);
+        });
+        
+        // 启动自动刷新
+        function startAutoRefresh() {
+            let seconds = 5;
+            refreshStatus.textContent = `下一次刷新: ${seconds}秒`;
+            
+            refreshInterval = setInterval(function() {
+                seconds--;
+                if (seconds <= 0) {
+                    fetchLogs('network');
+                    fetchLogs('file');
+                    fetchLogs('exec');
+                    seconds = 5;
+                }
+                refreshStatus.textContent = `下一次刷新: ${seconds}秒`;
+            }, 1000);
+        }
+        
+        // 获取日志
+        function fetchLogs(logType) {
+            fetch(`/api/logs?type=${logType}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        return;
+                    }
+                    
+                    // 只添加新的日志条目
+                    const existingIds = new Set(logs[logType].map(log => log.timestamp + log.type));
+                    const newLogs = data.filter(log => !existingIds.has(log.timestamp + log.type));
+                    
+                    if (newLogs.length > 0) {
+                        // 将新日志添加到顶部
+                        logs[logType] = [...newLogs, ...logs[logType]];
+                        
+                        // 限制日志数量
+                        if (logs[logType].length > maxLogs) {
+                            logs[logType] = logs[logType].slice(0, maxLogs);
+                        }
+                        
+                        // 渲染日志
+                        renderLogs(logType);
+                    }
+                })
+                .catch(error => console.error(`Error fetching ${logType} logs:`, error));
+        }
+        
+        // 渲染日志
+        function renderLogs(logType) {
+            const container = document.getElementById(`${logType}-logs`);
+            
+            if (logs[logType].length === 0) {
+                container.innerHTML = `
+                    <div class="no-logs">
+                        <p>没有 ${logType} 类型的日志记录</p>
+                    </div>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+            logs[logType].forEach(entry => {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                
+                const dataStr = JSON.stringify(entry.data || {}, null, 2);
+                
+                logEntry.innerHTML = `
+                    <div class="log-time">${entry.timestamp}</div>
+                    <div class="log-content">
+                        <strong>类型:</strong> ${entry.type}
+                        <div class="log-data">
+                            <pre>${dataStr}</pre>
+                        </div>
+                    </div>`;
+                
+                container.appendChild(logEntry);
+            });
+        }
+    </script>
 </body>
 </html> 
