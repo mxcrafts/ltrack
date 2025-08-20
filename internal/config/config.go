@@ -7,6 +7,7 @@ import (
 
 	"github.com/mxcrafts/ltrack/internal/types"
 	"github.com/mxcrafts/ltrack/pkg/logger"
+	"github.com/mxcrafts/ltrack/pkg/utils"
 )
 
 // ConfigMonitor Define configuration monitor
@@ -58,18 +59,19 @@ type Config struct {
 
 // StorageConfig Define storage related configuration
 type StorageConfig struct {
-	Enabled     bool              `toml:"enabled"`
-	Type        string            `toml:"type"`
-	Format      string            `toml:"format"`
-	Adapter     string            `toml:"adapter"`
-	FilePath    string            `toml:"file_path"`
-	MaxSize     int               `toml:"max_size"`
-	MaxAge      int               `toml:"max_age"`
-	MaxBackups  int               `toml:"max_backups"`
-	Compress    bool              `toml:"compress"`
-	RemoteAddr  string            `toml:"remote_addr"`
-	RemotePort  int               `toml:"remote_port"`
-	ExtraFields map[string]string `toml:"extra_fields"`
+	Enabled           bool              `toml:"enabled"`
+	Type              string            `toml:"type"`
+	Format            string            `toml:"format"`
+	Adapter           string            `toml:"adapter"`
+	FilePath          string            `toml:"file_path"`
+	MaxSize           int               `toml:"max_size"`
+	MaxAge            int               `toml:"max_age"`
+	MaxBackups        int               `toml:"max_backups"`
+	Compress          bool              `toml:"compress"`
+	RemoteAddr        string            `toml:"remote_addr"`
+	RemotePort        int               `toml:"remote_port"`
+	ExtraFields       map[string]string `toml:"extra_fields"`
+	AutoDetectHost    *bool             `toml:"auto_detect_host"`    // 是否自动检测主机名，使用指针以区分未设置和false
 }
 
 // KafkaConfig Kafka生产者配置
@@ -185,6 +187,45 @@ func Load(path string) (*Config, error) {
 	}
 	if config.HttpServer.Host == "" {
 		config.HttpServer.Host = "0.0.0.0"
+	}
+
+	// 设置存储配置的默认值
+	if config.Storage.Enabled {
+		// 设置自动检测主机名的默认值为 true（如果未在配置文件中指定）
+		autoDetectEnabled := true // 默认启用
+		if config.Storage.AutoDetectHost != nil {
+			autoDetectEnabled = *config.Storage.AutoDetectHost
+		}
+
+		if config.Storage.ExtraFields == nil {
+			config.Storage.ExtraFields = make(map[string]string)
+		}
+
+		// 自动检测并设置主机名（如果启用了自动检测）
+		if autoDetectEnabled {
+			if hostValue, exists := config.Storage.ExtraFields["host"]; !exists || hostValue == "" || hostValue == "localhost" {
+				if hostname, err := utils.GetHostname(); err == nil {
+					config.Storage.ExtraFields["host"] = hostname
+					logger.Global.Debug("Auto-detected hostname for storage extra fields", "hostname", hostname)
+				} else {
+					// 如果获取主机名失败，保留原值或设置为 localhost
+					if !exists || hostValue == "" {
+						config.Storage.ExtraFields["host"] = "localhost"
+					}
+					logger.Global.Warn("Failed to auto-detect hostname, using configured value or localhost",
+						"error", err, "fallback_host", config.Storage.ExtraFields["host"])
+				}
+			}
+		} else {
+			// 如果禁用了自动检测，但没有配置 host 字段，设置为 localhost
+			if hostValue, exists := config.Storage.ExtraFields["host"]; !exists || hostValue == "" {
+				config.Storage.ExtraFields["host"] = "localhost"
+				logger.Global.Debug("Auto-detection disabled, using localhost as default hostname")
+			}
+		}
+
+		// 设置最终的 AutoDetectHost 值（用于后续引用）
+		config.Storage.AutoDetectHost = &autoDetectEnabled
 	}
 
 	// 设置Kafka默认值

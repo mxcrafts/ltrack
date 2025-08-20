@@ -61,11 +61,17 @@ compress = true   # Whether to compress old files
 # Remote configuration (used when type="socket")
 remote_addr = ""  # Remote address
 remote_port = 0   # Remote port
+# Auto-detect hostname for extra fields (default: true)
+# When enabled, the system will automatically detect the current machine's hostname
+# and use it as the "host" field in extra_fields if not explicitly configured or set to "localhost"
+auto_detect_host = true
 
 # Extra fields specific to the adapter
 # These fields will be added to each log record
+# Note: If auto_detect_host is enabled (default), the "host" field will be automatically
+# set to the current machine's hostname unless explicitly configured to a different value
 [storage.extra_fields]
-host = "localhost"
+host = "localhost"  # Will be auto-detected if auto_detect_host=true and this is "localhost" or empty
 service = "ltrack"
 environment = "production"
 version = "1.0.0"
