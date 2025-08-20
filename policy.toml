@@ -22,7 +22,7 @@ enabled = true
 ports = [2333, 8888, 9999, 10086]
 protocols = ["tcp", "udp"]
 
-# HTTP服务器配置
+# HTTP Server Configuration
 [http_server]
 enabled = true
 port = 8088
@@ -91,51 +91,51 @@ facility = "ltrack"
 # For elasticsearch adapter, define index prefix
 index_prefix = "ltrack"
 
-# Kafka配置
+# Kafka Configuration
 # To use Kafka as output destination:
 # 1. Set storage.type = "kafka" and storage.adapter = "kafka"
 # 2. Set kafka.enabled = true
 # 3. Configure brokers, topic, and other Kafka settings below
 [kafka]
-# 是否启用Kafka生产者
+# Whether to enable Kafka producer
 enabled = true
-# Kafka broker地址列表 (支持多个broker以提高可用性)
+# Kafka broker address list (supports multiple brokers for high availability)
 brokers = ["0.0.0.0:9092"]
-# 目标topic
+# Target topic
 topic = "ltrack-test"
-# 客户端ID
+# Client ID
 client_id = "ltrack-producer"
-# 压缩算法: none, gzip, snappy, lz4, zstd
+# Compression algorithm: none, gzip, snappy, lz4, zstd
 compression = "gzip"
-# 批次大小（消息数量）
+# Batch size (number of messages)
 batch_size = 100
-# 批次字节大小
+# Batch byte size
 batch_bytes = 1048576  # 1MB
-# 批次超时时间（毫秒）
-batch_timeout = 1000   # 1秒
-# 写入超时时间（秒）
+# Batch timeout (milliseconds)
+batch_timeout = 1000   # 1 second
+# Write timeout (seconds)
 write_timeout = 10
-# 读取超时时间（秒）
+# Read timeout (seconds)
 read_timeout = 10
-# 重试次数
+# Number of retries
 retries = 3
 
-# SASL认证配置（可选）
+# SASL authentication configuration (optional)
 [kafka.sasl]
 enabled = false
-# 认证机制: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+# Authentication mechanism: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
 mechanism = "PLAIN"
 username = ""
 password = ""
 
-# TLS配置（可选）
+# TLS configuration (optional)
 [kafka.tls]
 enabled = false
-# 是否跳过证书验证（仅用于测试）
+# Whether to skip certificate verification (for testing only)
 insecure_skip_verify = false
-# 客户端证书文件路径
+# Client certificate file path
 cert_file = ""
-# 客户端私钥文件路径
+# Client private key file path
 key_file = ""
-# CA证书文件路径
+# CA certificate file path
 ca_file = ""
