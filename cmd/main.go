@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -101,7 +102,12 @@ func main() {
 		}
 
 		// Create storage manager
-		storageManager, err = storage.NewStorageManager(storageCfg, config.Storage.Adapter)
+		// 如果适配器是kafka，使用支持Kafka的存储管理器
+		if strings.ToLower(config.Storage.Adapter) == "kafka" && config.Kafka.Enabled {
+			storageManager, err = storage.NewStorageManagerWithKafka(storageCfg, config.Storage.Adapter, config.Kafka)
+		} else {
+			storageManager, err = storage.NewStorageManager(storageCfg, config.Storage.Adapter)
+		}
 		if err != nil {
 			logger.Global.Error("Create storage manager failed", "error", err)
 			os.Exit(1)

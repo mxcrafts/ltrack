@@ -12,6 +12,8 @@ const (
 	OutputSyslog StorageType = "syslog"
 	// OutputSocket output to Socket (TCP/UDP)
 	OutputSocket StorageType = "socket"
+	// OutputKafka output to Kafka
+	OutputKafka StorageType = "kafka"
 )
 
 // StorageFormat defines the storage format for logs

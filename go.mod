@@ -5,18 +5,19 @@ go 1.23.4
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/cilium/ebpf v0.12.3
-	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.15.0
+	github.com/segmentio/kafka-go v0.4.48
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
-require (
-	github.com/stretchr/testify v1.10.0 // indirect
-	go.uber.org/multierr v1.10.0 // indirect
-	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b // indirect
-)
+require golang.org/x/exp v0.0.0-20231226003508-02704c960a9b // indirect
 
 require (
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/scram v1.1.2 // indirect
+	github.com/xdg-go/stringprep v1.0.4 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 )

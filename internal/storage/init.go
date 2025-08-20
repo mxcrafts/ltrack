@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mxcrafts/ltrack/internal/collector"
+	"github.com/mxcrafts/ltrack/internal/config"
 	"github.com/mxcrafts/ltrack/internal/types"
 	"github.com/mxcrafts/ltrack/pkg/logger"
 )
@@ -84,6 +85,53 @@ func NewStorageManager(cfg types.StorageConfig, adapterName string) (*StorageMan
 	ctx, cancel := context.WithCancel(context.Background())
 
 	logger.Global.Debug("Storage manager created successfully")
+	return &StorageManager{
+		store:      store,
+		ctx:        ctx,
+		cancelFunc: cancel,
+	}, nil
+}
+
+// NewStorageManagerWithKafka 创建支持Kafka的存储管理器
+func NewStorageManagerWithKafka(cfg types.StorageConfig, adapterName string, kafkaConfig config.KafkaConfig) (*StorageManager, error) {
+	logger.Global.Debug("Starting to create storage manager with Kafka support",
+		"type", string(cfg.Type),
+		"adapter", adapterName,
+		"kafka_enabled", kafkaConfig.Enabled)
+
+	var store Storage
+	var err error
+
+	// 如果适配器是kafka，使用特殊的初始化逻辑
+	if strings.ToLower(adapterName) == "kafka" && kafkaConfig.Enabled {
+		adapter, err := NewKafkaAdapter(cfg, kafkaConfig)
+		if err != nil {
+			logger.Global.Error("Failed to create kafka adapter", "error", err)
+			return nil, fmt.Errorf("failed to create kafka adapter: %w", err)
+		}
+
+		store, err = NewAdapterStorage(cfg, adapter)
+		if err != nil {
+			logger.Global.Error("Failed to create kafka adapter storage", "error", err)
+			return nil, fmt.Errorf("failed to create kafka adapter storage: %w", err)
+		}
+
+		logger.Global.Info("Initialized storage with Kafka adapter",
+			"brokers", kafkaConfig.Brokers,
+			"topic", kafkaConfig.Topic,
+			"compression", kafkaConfig.Compression)
+	} else {
+		// 使用标准初始化逻辑
+		store, err = InitStorageFromConfig(cfg, adapterName)
+		if err != nil {
+			logger.Global.Error("Failed to initialize storage", "error", err)
+			return nil, err
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	logger.Global.Debug("Storage manager with Kafka support created successfully")
 	return &StorageManager{
 		store:      store,
 		ctx:        ctx,

@@ -14,4 +14,4 @@
 # Dependencies
 /vendor/
 
-.cursorindexignore
+policy.local.toml

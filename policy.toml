@@ -43,12 +43,14 @@ compress = true
 [storage]
 # Whether to enable the storage system
 enabled = true
-# Storage type: "file" (file), "stdout" (standard output), "socket" (network socket), "syslog" (system log)
-type = "file"
+# Storage type: "file" (file), "stdout" (standard output), "socket" (network socket), "syslog" (system log), "kafka" (Kafka)
+# Note: To use Kafka output, set type = "kafka" and adapter = "kafka", and enable kafka.enabled = true
+type = "kafka"
 # Storage format: "json" (JSON format), "text" (text format), "ndjson" (newline-delimited JSON)
 format = "json"
-# Log adapter: "standard", "elasticsearch", "logstash", "fluentd", "graylog"
-adapter = "logstash"
+# Log adapter: "standard", "elasticsearch", "logstash", "fluentd", "graylog", "kafka"
+# Note: When using Kafka, set adapter = "kafka"
+adapter = "kafka"
 # File path (used when type="file")
 file_path = "/var/log/ltrack/events.log"
 # Log file rotation settings
@@ -66,6 +68,7 @@ remote_port = 0   # Remote port
 host = "localhost"
 service = "ltrack"
 environment = "production"
+version = "1.0.0"
 
 # Adapter-specific configuration
 # The adapter will format and process events according to these configuration items
@@ -81,3 +84,52 @@ facility = "ltrack"
 
 # For elasticsearch adapter, define index prefix
 index_prefix = "ltrack"
+
+# Kafka配置
+# To use Kafka as output destination:
+# 1. Set storage.type = "kafka" and storage.adapter = "kafka"
+# 2. Set kafka.enabled = true
+# 3. Configure brokers, topic, and other Kafka settings below
+[kafka]
+# 是否启用Kafka生产者
+enabled = true
+# Kafka broker地址列表 (支持多个broker以提高可用性)
+brokers = ["0.0.0.0:9092"]
+# 目标topic
+topic = "ltrack-test"
+# 客户端ID
+client_id = "ltrack-producer"
+# 压缩算法: none, gzip, snappy, lz4, zstd
+compression = "gzip"
+# 批次大小（消息数量）
+batch_size = 100
+# 批次字节大小
+batch_bytes = 1048576  # 1MB
+# 批次超时时间（毫秒）
+batch_timeout = 1000   # 1秒
+# 写入超时时间（秒）
+write_timeout = 10
+# 读取超时时间（秒）
+read_timeout = 10
+# 重试次数
+retries = 3
+
+# SASL认证配置（可选）
+[kafka.sasl]
+enabled = false
+# 认证机制: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+mechanism = "PLAIN"
+username = ""
+password = ""
+
+# TLS配置（可选）
+[kafka.tls]
+enabled = false
+# 是否跳过证书验证（仅用于测试）
+insecure_skip_verify = false
+# 客户端证书文件路径
+cert_file = ""
+# 客户端私钥文件路径
+key_file = ""
+# CA证书文件路径
+ca_file = ""
