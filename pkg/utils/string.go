@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"os"
 	"strings"
 )
 
@@ -41,4 +42,13 @@ func CleanCommandArgs(data []byte, size uint32) string {
 	}
 	argvBytes := bytes.ReplaceAll(data[:size], []byte{0}, []byte{' '})
 	return strings.TrimSpace(string(argvBytes))
+}
+
+// GetHostname returns the hostname of the current machine
+func GetHostname() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+	return hostname, nil
 }
