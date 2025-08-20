@@ -102,6 +102,10 @@ func (m *Monitor) Start(ctx context.Context) error {
 			m.objs.Close()
 			return fmt.Errorf("failed to start packet socket monitoring: %v", err)
 		}
+	} else {
+		// XDP 成功附加，但为了监控本地回环流量，我们还需要启动一个轻量级的本地监控
+		logger.Global.Info("XDP attached successfully, starting additional localhost monitoring for loopback traffic")
+		go m.startLocalhostMonitoring(ctx)
 	}
 
 	return nil
@@ -233,6 +237,95 @@ func getActiveInterfaces() []string {
 	}
 
 	return activeInterfaces
+}
+
+// 启动本地回环流量监控（用于配合XDP监控外部流量）
+func (m *Monitor) startLocalhostMonitoring(ctx context.Context) error {
+	logger.Global.Info("Starting localhost monitoring for loopback traffic")
+
+	// 使用简单的端口扫描方式监控本地端口状态变化
+	return m.startLocalhostPortMonitoring(ctx)
+}
+
+// 本地监控方法：使用端口状态检查
+func (m *Monitor) startLocalhostPortMonitoring(ctx context.Context) error {
+	logger.Global.Info("Starting localhost port monitoring")
+
+	// 获取要监控的端口列表
+	portsToMonitor := make([]int, 0, len(m.ports))
+	for port := range m.ports {
+		portsToMonitor = append(portsToMonitor, port)
+	}
+
+	if len(portsToMonitor) == 0 {
+		logger.Global.Warn("No ports configured for localhost monitoring")
+		return nil
+	}
+
+	// 定期检查端口状态
+	ticker := time.NewTicker(500 * time.Millisecond) // 更频繁的检查
+	defer ticker.Stop()
+
+	portStates := make(map[string]bool) // 记录端口的上一次状态，key格式: "tcp:1234"
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			for _, port := range portsToMonitor {
+				// 检查TCP端口
+				if len(m.protocols) == 0 || m.protocols["tcp"] {
+					m.checkLocalhostPort("tcp", port, portStates)
+				}
+			}
+		}
+	}
+}
+
+// 检查本地端口状态
+func (m *Monitor) checkLocalhostPort(protocol string, port int, portStates map[string]bool) {
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	portKey := fmt.Sprintf("%s:%d", protocol, port)
+
+	conn, err := net.DialTimeout(protocol, addr, 50*time.Millisecond)
+	isOpen := err == nil
+	if conn != nil {
+		conn.Close()
+	}
+
+	wasOpen, existed := portStates[portKey]
+	portStates[portKey] = isOpen
+
+	// 如果端口状态发生变化，记录事件
+	if !existed || wasOpen != isOpen {
+		eventType := "PORT_CLOSED"
+		if isOpen {
+			eventType = "PORT_OPENED"
+		}
+
+		event := &NetworkEvent{
+			Type:      "network",
+			Timestamp: time.Now(),
+			Data: map[string]interface{}{
+				"dst_ip":     "127.0.0.1",
+				"dst_port":   port,
+				"protocol":   protocol,
+				"event_type": eventType,
+				"interface":  "lo",
+			},
+		}
+
+		select {
+		case m.eventChan <- event:
+			logger.Global.Info("Localhost port state changed",
+				"port", port,
+				"protocol", protocol,
+				"state", eventType)
+		default:
+			logger.Global.Warn("Event channel is full, dropping localhost port event")
+		}
+	}
 }
 
 // 使用原始套接字作为备选的网络监控方法

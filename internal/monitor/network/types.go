@@ -38,6 +38,11 @@ func (e *NetworkEvent) GetType() string {
 	return e.Type
 }
 
+// GetData returns the data of the event
+func (e *NetworkEvent) GetData() map[string]interface{} {
+	return e.Data
+}
+
 type Monitor struct {
 	config    *config.Config
 	objs      networkObjects
